@@ -10,22 +10,6 @@ CORS(app)
 
 init_db()
 
-def insert_summary_data(data):
-    """
-    Inserts summary data into the summaries table with unique URL constraint.
-    
-    Args:
-    - data (list): List of dictionaries containing URL, page type, and summary.
-    """
-
-
-
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
-
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
@@ -69,6 +53,63 @@ def scrape():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/history/<int:id>/upvote', methods=['POST'])
+def upvote(id):
+    try:
+        print(type(id))
+        conn = sqlite3.connect('scraper.db')
+        cursor = conn.cursor()
+
+        # Retrieve the current upvotes
+        cursor.execute('SELECT upvotes FROM summaries WHERE id = ?', (id,))
+        row = cursor.fetchone()
+        print("Row: ", row[0])
+        if row is None:
+            return jsonify({"error": "Item not found"}), 404
+
+        print("Type in db: ", type(row[0]))
+        # Increment the upvotes count
+        new_upvotes = row[0] + 1
+        cursor.execute('UPDATE summaries SET upvotes = ? WHERE id = ?', (new_upvotes, id))
+        conn.commit()
+
+        return jsonify({"id": id, "upvotes": new_upvotes}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()
+
+
+@app.route('/history/<int:id>/downvote', methods=['POST'])
+def downvote(id):
+    try:
+        conn = sqlite3.connect('scraper.db')
+        cursor = conn.cursor()
+
+        # Retrieve the current upvotes
+        cursor.execute('SELECT downvotes FROM summaries WHERE id = ?', (id,))
+        row = cursor.fetchone()
+
+        if row is None:
+            return jsonify({"error": "Item not found"}), 404
+
+        # Increment the upvotes count
+        new_downvotes = row['downvotes'] + 1
+        cursor.execute('UPDATE summaries SET downvotes = ? WHERE id = ?', (new_downvotes, id))
+        conn.commit()
+
+        return jsonify({"id": id, "downvotes": new_downvotes}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        conn.close()
+
+
 @app.route("/history", methods=["GET"])
 def get_history():
 
@@ -76,16 +117,19 @@ def get_history():
         conn = sqlite3.connect('scraper.db')
         cursor = conn.cursor()
 
-        cursor.execute('SELECT url, page_type, url_summary FROM summaries')
+        cursor.execute('SELECT id, url, page_type, url_summary, upvotes, downvotes FROM summaries')
         rows = cursor.fetchall()
 
         # Structure the data as a list of dictionaries
         history = []
         for row in rows:
             entry = {
-                "url": row[0],
-                "page_type": row[1],
-                "url_summary": row[2]
+                "id": row[0],
+                "url": row[1],
+                "page_type": row[2],
+                "url_summary": row[3],
+                "upvotes": row[4],
+                "downvotes": row[5]
             }
             history.append(entry)
 

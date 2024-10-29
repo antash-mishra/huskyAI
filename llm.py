@@ -6,13 +6,13 @@ import os
 
 client = OpenAI(
   base_url = "https://integrate.api.nvidia.com/v1",
-  api_key = os.environ["NVIDIA_API_KEY"]
+  api_key = "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"
 )
 
 # client_groq = Groq()
 
 client_groq = Groq(
-  api_key= os.environ["GROQ_API_KEY"]
+  api_key="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"
 )
 
 
