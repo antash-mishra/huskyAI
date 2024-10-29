@@ -50,7 +50,7 @@ def get_webtext(url):
 
     #Hyperlinks in the URL
     url_hyperlink = get_domain_hyperlinks(local_domain=local_domain, url=url)
-    print("URL Hyperlinks: ", url_hyperlink)
+    #print("URL Hyperlinks: ", url_hyperlink)
 
     # Get the text from the URL using BeautifulSoup
     soup = BeautifulSoup(requests.get(url).text, "html.parser")
@@ -58,42 +58,55 @@ def get_webtext(url):
 
     text = str(soup.body())
     cleaned_body_content = clean_body_content(text)
-    # print("Cleaned body content: ", cleaned_body_content)
+    #print("Cleaned body content: ", cleaned_body_content)
         
     #take_screenshot(url, local_domain)    
     return cleaned_body_content
 
-def get_summary(url, depth = 1, max_depth = 3):
-
+def get_summary(url, depth=1, max_depth=2):
     if depth > max_depth:
         # Prevents excessive recursion
         return []
 
     local_domain = get_localdomain(url)
 
-    cleaned_body_content = get_webtext(url)
-    
-    llm_response, url_type = call_llm(cleaned_body_content)    
-    parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response}
-    
-    all_llm_response = [parent_response]
+    try:
+        # Fetch and clean the content from the main URL
+        cleaned_body_content = get_webtext(url)
+        
+        # Get the summary and page type
+        llm_response, url_type = call_llm(cleaned_body_content)
+        
+        # Initialize the parent response
+        parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response}
+        all_llm_response = [parent_response]
 
+        # If the page type is "multiple," retrieve hyperlinks for nested scraping
+        if url_type == "multiple":
+            url_hyperlinks = get_domain_hyperlinks(local_domain=local_domain, url=url)
 
-    # Check for all the hyperlink inside if single or multiple url. 
-    # If  singl url => return llm_response
-    # else (if multiple) get all the links from the nested hyperlink page
-    if url_type == "multiple":
-        url_hyperlinks = get_domain_hyperlinks(local_domain=local_domain, url=url)
+            for link in url_hyperlinks[:5]:
+                try:
+                    print("Processing Link: ", link)
+                    
+                    # Recursively fetch summaries for nested links
+                    nested_summary = get_summary(link, depth=depth + 1, max_depth=max_depth)
+                    print("Nested summary: ", nested_summary)
 
-        for link in url_hyperlinks:
-            print("Link: ", link)
-            nested_summary = get_summary(link, depth=depth+1, max_depth=max_depth)
-            
-            if nested_summary:
-                # If a nested page contains a single article, add its summary
-                all_llm_response.append(nested_summary)
-    
-    return all_llm_response
+                    if nested_summary:
+                        # Append the summary of a nested page if available
+                        all_llm_response.extend(nested_summary)
+
+                except Exception as e:
+                    print(f"Error processing link {link}: {e}")
+                    # Continue to the next link if an error occurs
+                    continue
+
+        return all_llm_response
+
+    except Exception as e:
+        print(f"Error processing URL {url}: {e}")
+        return []
 
 def clean_body_content(body_content):
     print("Type of body content: ", type(body_content))
