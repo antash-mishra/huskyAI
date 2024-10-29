@@ -1,11 +1,16 @@
 // app/history/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
+import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ScrapedUrl, ApiError } from '@/types/scraping';
+import VoteButtons from '@/components/VoteButtons';
+
+import { ScrapedUrl, ApiError, VotedUrl} from '@/types/scraping';
+
+
 
 export default function HistoryPage() {
   const [history, setHistory] = useState<ScrapedUrl[]>([]);
@@ -32,6 +37,45 @@ export default function HistoryPage() {
 
     fetchHistory();
   }, []);
+
+
+  const handleUpvote = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:5000/history/${id}/upvote`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        throw new Error(errorData.error || 'Failed to upvote');
+      }
+      const updatedHistory = history.map(item =>
+        item.id === id ? { ...item, upvotes: item.upvotes + 1 } : item
+      );
+      setHistory(updatedHistory);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const handleDownvote = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:5000/history/${id}/downvote`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        throw new Error(errorData.error || 'Failed to downvote');
+      }
+      const updatedHistory = history.map(item =>
+        item.id === id ? { ...item, downvotes: item.downvotes + 1 } : item
+      );
+      setHistory(updatedHistory);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+
 
   const filteredHistory = history.filter(item => 
     item.url.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,8 +124,8 @@ export default function HistoryPage() {
             </CardContent>
           </Card>
         ) : (
-          filteredHistory.map((item, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
+          filteredHistory.map((item) => (
+            <Card key={item.id} className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg font-medium">
                   <a 
@@ -93,12 +137,30 @@ export default function HistoryPage() {
                     {item.url}
                   </a>
                 </CardTitle>
-                <Badge 
-                  variant="secondary"
-                  className="capitalize"
-                >
-                  {item.page_type}
-                </Badge>
+                <div className="flex items-center space-x-2">
+                  <Badge 
+                    variant="secondary"
+                    className="capitalize"
+                  >
+                    {item.page_type}
+                  </Badge>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      className="text-green-500 hover:text-green-700"
+                      onClick={() => handleUpvote(item.id)}
+                    >
+                      <ArrowUpIcon size={16} />
+                    </button>
+                    <span>{item.upvotes}</span>
+                    <button
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => handleDownvote(item.id)}
+                    >
+                      <ArrowDownIcon size={16} />
+                    </button>
+                    <span>{item.downvotes}</span>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 text-sm">
@@ -111,4 +173,5 @@ export default function HistoryPage() {
       </div>
     </div>
   );
+
 }
