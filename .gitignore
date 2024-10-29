@@ -1,0 +1,5 @@
+.venv
+.ipynb_checkpoints
+__pycache__
+snatched_crawler_client/.next
+snatched_crawler_client/node_modules
