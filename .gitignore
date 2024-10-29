@@ -1,0 +1,16 @@
+.venv
+.ipynb_checkpoints
+__pycache__
+snatched_crawler_client/.next/
+snatched-crawler-client/node_modules/
+snatched-crawler-client/out/
+snatched-crawler-client/build
+snatched-crawler-client/npm-debug.log*
+snatched-crawler-client/yarn-debug.log*
+snatched-crawler-client/yarn-error.log*
+chromedriver-linux64/
+combined_screenshot.png
+nvidia_key.txt
+scraper.db
+.env
+Untitled.ipynb
