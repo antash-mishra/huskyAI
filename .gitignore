@@ -1,7 +1,7 @@
 .venv
 .ipynb_checkpoints
 __pycache__
-snatched_crawler_client/.next/
+snatched-crawler-client/.next/
 snatched-crawler-client/node_modules/
 snatched-crawler-client/out/
 snatched-crawler-client/build
