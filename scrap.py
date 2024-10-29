@@ -5,6 +5,20 @@ from collections import deque
 from bs4 import BeautifulSoup
 import re
 import os
+import asyncio
+from pyppeteer import launch
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chromium.remote_connection import ChromiumRemoteConnection
+from selenium.webdriver import Remote, ChromeOptions
+from PIL import Image
+
+import time
+
+from parser import get_domain_hyperlinks
+from llm import call_llm
 
 def get_localdomain(url):
     regex_pattern = r"https://([^/]+\.com)"
@@ -23,7 +37,7 @@ def get_localdomain(url):
 
 #     # Trim leading and trailing spaces
 #     cleaned_text = cleaned_text.strip()
-    
+    66
 #     return cleaned_text
 
 def remove_elements_with_few_words(arr):
@@ -32,26 +46,54 @@ def remove_elements_with_few_words(arr):
 
 def get_webtext(url):
     local_domain = get_localdomain(url)
+    # print("Local domain: ", local_domain)
 
-    if not os.path.exists("text/"+local_domain+"/"):
-        os.mkdir("text/" + local_domain + "/")
-    with open('text/'+local_domain+'/'+url[8:].replace("/", "_") + ".txt", "w", encoding="UTF-8") as f:
+    #Hyperlinks in the URL
+    url_hyperlink = get_domain_hyperlinks(local_domain=local_domain, url=url)
+    print("URL Hyperlinks: ", url_hyperlink)
 
-        # Get the text from the URL using BeautifulSoup
-        soup = BeautifulSoup(requests.get(url).text, "html.parser")
+    # Get the text from the URL using BeautifulSoup
+    soup = BeautifulSoup(requests.get(url).text, "html.parser")
 
 
-        text = str(soup.body())
-        print("Text: ", text)
-        cleaned_body_content, cleaned_body_array = clean_body_content(text)
-
-        # If the crawler gets to a page that requires JavaScript, it will stop the crawl
-        if ("You need to enable JavaScript to run this app." in cleaned_body_content):
-            print("Unable to parse page " + url + " due to JavaScript being required")
+    text = str(soup.body())
+    cleaned_body_content = clean_body_content(text)
+    # print("Cleaned body content: ", cleaned_body_content)
         
-        f.write(cleaned_body_content)
+    #take_screenshot(url, local_domain)    
+    return cleaned_body_content
 
-        return cleaned_body_content
+def get_summary(url, depth = 1, max_depth = 3):
+
+    if depth > max_depth:
+        # Prevents excessive recursion
+        return []
+
+    local_domain = get_localdomain(url)
+
+    cleaned_body_content = get_webtext(url)
+    
+    llm_response, url_type = call_llm(cleaned_body_content)    
+    parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response}
+    
+    all_llm_response = [parent_response]
+
+
+    # Check for all the hyperlink inside if single or multiple url. 
+    # If  singl url => return llm_response
+    # else (if multiple) get all the links from the nested hyperlink page
+    if url_type == "multiple":
+        url_hyperlinks = get_domain_hyperlinks(local_domain=local_domain, url=url)
+
+        for link in url_hyperlinks:
+            print("Link: ", link)
+            nested_summary = get_summary(link, depth=depth+1, max_depth=max_depth)
+            
+            if nested_summary:
+                # If a nested page contains a single article, add its summary
+                all_llm_response.append(nested_summary)
+    
+    return all_llm_response
 
 def clean_body_content(body_content):
     print("Type of body content: ", type(body_content))
@@ -62,7 +104,7 @@ def clean_body_content(body_content):
 
     # Get text or further process the content
     cleaned_content = soup.get_text(separator="\n")
-    print(cleaned_content)
+    # print(cleaned_content)
     cleaned_content = "\n".join(
         line.strip() for line in cleaned_content.splitlines() if line.strip()
     )
@@ -71,10 +113,12 @@ def clean_body_content(body_content):
     filtered_cleaned_content_array = remove_elements_with_few_words(cleaned_content_array)
     filtered_cleaned_content = " ".join(filtered_cleaned_content_array)
 
-    return filtered_cleaned_content, filtered_cleaned_content_array
+    return filtered_cleaned_content
 
 
 def split_dom_content(dom_content, max_length=6000):
     return [
         dom_content[i : i + max_length] for i in range(0, len(dom_content), max_length)
     ]
+
+

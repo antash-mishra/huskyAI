@@ -6,33 +6,65 @@ import os
 
 client = OpenAI(
   base_url = "https://integrate.api.nvidia.com/v1",
-  api_key = os.environ.get('NVIDIA_API_KEY')
+  api_key = os.environ["NVIDIA_API_KEY"]
 )
 
 # client_groq = Groq()
+
+client_groq = Groq(
+  api_key= os.environ["GROQ_API_KEY"]
+)
 
 
 def call_llm(article_text):
 
     completion = client.chat.completions.create(
-      model="nvidia/llama-3.1-nemotron-70b-instruct",
+      model="abacusai/dracarys-llama-3.1-70b-instruct",
       messages=[{"role": "user", "content": f"Summarize the following article scraped from website: {article_text}"}],
       temperature=1,
       top_p=1,
       max_tokens=1024,
       stream=False
     )
+    print("Response LLM: ", completion)
     result = completion.choices[0].message.content
     print("Response LLM: ", result)
     url_type = check_url_type(result)
 
     return result, url_type
 
+# def call_llm(article_text):
+#     try:
+#         # Request summary from the NVIDIA LLaMA model using Groq
+#         completion = client_groq.chat.completions.create(
+#             model="llama-3.2-90b-text-preview",
+#             messages=[{"role": "user", "content": f"Summarize the following article scraped from website: {article_text}"}],
+#             temperature=1,
+#             top_p=1,
+#             max_tokens=1024,
+#             stream=False
+#         )
+#         print("Response LLM: ", completion)
+        
+#         # Extract the summary text
+#         result = completion.choices[0].message.content
+#         print("Response LLM: ", result)
+        
+#         # Determine URL type based on the result
+#         url_type = check_url_type(result)
+        
+#         return result, url_type
+
+#     except Exception as e:
+#         print(f"Error in call_llm: {e}")
+#         return None, None
+
 
 def check_url_type(article_text):
     system_prompt = """
       You are an article classification tool that receives a summarized version of text from a scraped website. Your task is to determine whether the content contains a single article or multiple articles, with no single article as the center of attention.
 
+   
       1. **Criteria for Classification**:
         - If the summary focuses on one main article or topic, respond with "single."
         - If the summary covers various articles or topics with no clear central article, respond with "multiple."
@@ -51,8 +83,8 @@ def check_url_type(article_text):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": article_text},
     ]
-    completion = client.chat.completions.create(
-        model="nvidia/llama-3.1-nemotron-70b-instruct",
+    completion = client_groq.chat.completions.create(
+        model="llama-3.1-70b-versatile",
         messages=message,
         temperature=1,
         top_p=1,
@@ -63,4 +95,5 @@ def check_url_type(article_text):
     print("Response LLM: ", result)
 
     return result
+
 
