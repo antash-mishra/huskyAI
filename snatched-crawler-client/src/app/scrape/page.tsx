@@ -25,7 +25,7 @@ export default function ScraperForm() {
     
     try {
       // You can replace this with your actual API route
-      const response = await fetch('http://localhost:5000/api/scrape', {
+      const response = await fetch('/api/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ export default function ScraperForm() {
         throw new Error(errorData.error || 'Scraping failed');
       }
 
-      const data: ScrapeResponse = await response.json();
+      // const data: ScrapeResponse = await response.json();
       router.push('/');
 
     } catch (error) {

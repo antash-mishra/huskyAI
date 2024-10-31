@@ -4,11 +4,11 @@ import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface VoteButtonsProps {
   item: ScrapedUrl;
-  onVote: (itemId: string, voteDirection: 'up' | 'down') => void;
+  onVote: (itemId: string, voteDirection: 'up' | 'down' | 'none') => void;
 }
 
 const VoteButtons: React.FC<VoteButtonsProps> = ({ item, onVote }) => {
-  const [hasVoted, setHasVoted] = useState<'up' | 'down' | null>(null);
+  const [hasVoted, setHasVoted] = useState<'up' | 'down' | 'none' | null>(null);
 
   const handleUpvote = () => {
     if (hasVoted !== 'up') {

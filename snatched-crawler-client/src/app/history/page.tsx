@@ -6,9 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import VoteButtons from '@/components/VoteButtons';
 
-import { ScrapedUrl, ApiError, VotedUrl} from '@/types/scraping';
+import { ScrapedUrl, ApiError} from '@/types/scraping';
 
 
 
@@ -21,7 +20,7 @@ export default function HistoryPage() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch('http://localhost:5000/history');
+        const response = await fetch('/api/history');
         if (!response.ok) {
           const errorData: ApiError = await response.json();
           throw new Error(errorData.error || 'Failed to fetch history');
@@ -41,7 +40,7 @@ export default function HistoryPage() {
 
   const handleUpvote = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:5000/history/${id}/upvote`, {
+      const response = await fetch('/api/history/${id}/upvote', {
         method: 'POST',
       });
       if (!response.ok) {
@@ -59,7 +58,7 @@ export default function HistoryPage() {
 
   const handleDownvote = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:5000/history/${id}/downvote`, {
+      const response = await fetch('/api/history/${id}/downvote', {
         method: 'POST',
       });
       if (!response.ok) {
