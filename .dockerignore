@@ -1,0 +1,29 @@
+# flyctl launch added from .gitignore
+**/.venv
+**/.ipynb_checkpoints
+**/__pycache__
+**/snatched-crawler-client/.next
+**/snatched-crawler-client/node_modules
+**/snatched-crawler-client/out
+**/snatched-crawler-client/build
+**/snatched-crawler-client/npm-debug.log*
+**/snatched-crawler-client/yarn-debug.log*
+**/snatched-crawler-client/yarn-error.log*
+**/chromedriver-linux64
+**/combined_screenshot.png
+**/nvidia_key.txt
+**/scraper.db
+**/.env
+**/Untitled.ipynb
+
+# flyctl launch added from .venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/_pydevd_frame_eval/.gitignore
+.venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_evaluator.*.so
+.venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_evaluator.*.pyd
+.venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_evaluator.pyx
+
+# flyctl launch added from .venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/.gitignore
+.venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/attach_x86.dylib
+.venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/attach_x86_64.dylib
+.venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/attach_linux_x86.o
+.venv/lib/python3.12/site-packages/debugpy/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/attach_linux_x86_64.o
+fly.toml
