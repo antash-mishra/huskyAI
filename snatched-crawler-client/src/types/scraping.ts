@@ -1,7 +1,7 @@
 export interface ScrapingResult {
-    success: Boolean;
+    success: boolean;
     entry: string[];
-    count: Number;
+    count: number;
   }
 
   export interface ScrapedUrl {
