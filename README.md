@@ -14,3 +14,10 @@
 * Then, Install package.json by `npm install package.json`
 * At last `npx next dev`
     ** This will start the client-side at port 3000 
+
+
+### TODO
+
+* Add sign-in page
+* Work on Improvement of User engagement. (While scrapping move it to the background and show the previous news)
+* Work on scheduled updation of provided URL by user to make news or articles refreshed.
