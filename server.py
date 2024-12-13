@@ -1,9 +1,19 @@
+import os
 from flask import Flask, g, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
 import sqlite3
 import logging 
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
 from scrap import get_summary
 from db import init_db
+import jwt
+import datetime
+
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +158,69 @@ def get_history():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/auth/google', methods=['POST'])
+def google_auth():
+    # Receving google ID token
+    token = request.json.get('token')
+
+    try:
+        # Verify Google ID Token
+        id_info = id_token.verify_oauth2_token(
+            token,
+            google_requests.Request(),
+             os.getenv("GOOGLE_CLIENT_ID")
+        )
+
+        user_id = id_info['sub']
+        email = id_info['email']
+        name = id_info['name']
+
+        # Create a JWT token for application
+        jwt_token = jwt.encode({
+            'user_id': user_id,
+            'email': email,
+            'name': name,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        }, os.getenv("JWT_SECRET"), algorithm='HS256')
+
+        return jsonify({'token': jwt_token,
+                        'user': {
+                            'id': user_id,
+                            'email': email,
+                            'name': name
+                        }}), 200
+    except ValueError:
+        return jsonify({'error': 'No token provided'}), 401
+
+@app.route('/auth/verify', methods=['GET'])
+def verify_token():
+    # Get the token from Authorization header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return jsonify({'error': 'No token provided'}), 401
+    
+    try:
+        # Remove 'Bearer ' from the token
+        token = auth_header.split(' ')[1]
+        
+        # Verify the JWT token
+        payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=['HS256'])
+        
+        return jsonify({
+            'user': {
+                'id': payload['user_id'],
+                'email': payload['email'],
+                'name': payload['name']
+            }
+        }), 200
+    
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token has expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Invalid token'}), 401
+
 
 if __name__ == '__main__':
     app.run(debug=True)

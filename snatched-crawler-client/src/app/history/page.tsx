@@ -20,7 +20,7 @@ export default function HistoryPage() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch('/api/history');
+        const response = await fetch('http://localhost:5000/history');
         if (!response.ok) {
           const errorData: ApiError = await response.json();
           throw new Error(errorData.error || 'Failed to fetch history');
@@ -40,7 +40,7 @@ export default function HistoryPage() {
 
   const handleUpvote = async (id: number) => {
     try {
-      const response = await fetch('/api/history/${id}/upvote', {
+      const response = await fetch('http://localhost:5000/history/${id}/upvote', {
         method: 'POST',
       });
       if (!response.ok) {
@@ -58,7 +58,7 @@ export default function HistoryPage() {
 
   const handleDownvote = async (id: number) => {
     try {
-      const response = await fetch('/api/history/${id}/downvote', {
+      const response = await fetch('http://localhost:5000/history/${id}/downvote', {
         method: 'POST',
       });
       if (!response.ok) {
@@ -110,7 +110,7 @@ export default function HistoryPage() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-md"
-        />
+         />
       </div>
 
       <div className="space-y-4">

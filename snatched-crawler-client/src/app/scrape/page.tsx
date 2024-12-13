@@ -25,7 +25,7 @@ export default function ScraperForm() {
     
     try {
       // You can replace this with your actual API route
-      const response = await fetch('/api/api/scrape', {
+      const response = await fetch('http://localhost:5000/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

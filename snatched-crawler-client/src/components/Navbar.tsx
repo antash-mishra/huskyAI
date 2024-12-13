@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useUser } from '../context/UserContext';
 
 interface NavLinkProps {
   href: string;
@@ -42,6 +43,20 @@ const NavLink: React.FC<NavLinkProps> = ({ href, children, isMobile = false }) =
 };
 
 const Navbar: React.FC = () => {
+  const { user, setUser } = useUser(); // Access user context
+
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const isSignInPage = pathname === '/';
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token')
+    setUser(null)
+    router.push('/');
+  };
+
+
   return (
     <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
@@ -56,20 +71,35 @@ const Navbar: React.FC = () => {
               </Link>
             </div>
             
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <NavLink href="/">History</NavLink>
-              <NavLink href="/scrape">New Scrape</NavLink>
-            </div>
+            {!isSignInPage && (
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <NavLink href="/history">History</NavLink>
+                <NavLink href="/scrape">New Scrape</NavLink>
+              </div>
+            )}
           </div>
+          {!isSignInPage && (
+            <div className="flex items-center space-x-4">
+              {user && <span className="text-gray-800 font-medium">Welcome, {user.name}!</span>}
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 focus:outline-none"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
       
       {/* Mobile menu */}
       <div className="sm:hidden">
+      {!isSignInPage && (
         <div className="pt-2 pb-3 space-y-1">
-          <NavLink href="/" isMobile>History</NavLink>
+          <NavLink href="/history" isMobile>History</NavLink>
           <NavLink href="/scrape" isMobile>New Scrape</NavLink>
         </div>
+      )}
       </div>
     </nav>
   );
