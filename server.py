@@ -1,9 +1,11 @@
 from flask import Flask, g, request, jsonify
 from flask_cors import CORS
 import sqlite3
-
+import logging 
 from scrap import get_summary
 from db import init_db
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
@@ -20,14 +22,20 @@ def scrape():
         data = request.get_json()
         url = data.get('url')
 
+
         if not url:
             return jsonify({'error': 'URL is reqiured'}), 400
         
 
         scrapped_data = get_summary(url)
+        logger.warn(f"Scrapped Summary: {scrapped_data}")
 
         conn = sqlite3.connect('scraper.db')
         cursor = conn.cursor()
+
+        logger.warn(
+            f"Connection Done: {conn}"
+        )
 
         try:
             for entry in scrapped_data:

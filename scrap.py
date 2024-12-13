@@ -46,11 +46,11 @@ def remove_elements_with_few_words(arr):
 
 def get_webtext(url):
     local_domain = get_localdomain(url)
-    # print("Local domain: ", local_domain)
+    print("Local domain: ", local_domain)
 
     #Hyperlinks in the URL
     url_hyperlink = get_domain_hyperlinks(local_domain=local_domain, url=url)
-    #print("URL Hyperlinks: ", url_hyperlink)
+    print("URL Hyperlinks: ", url_hyperlink)
 
     # Get the text from the URL using BeautifulSoup
     soup = BeautifulSoup(requests.get(url).text, "html.parser")
@@ -85,7 +85,7 @@ def get_summary(url, depth=1, max_depth=2):
         if url_type == "multiple":
             url_hyperlinks = get_domain_hyperlinks(local_domain=local_domain, url=url)
 
-            for link in url_hyperlinks[:5]:
+            for link in url_hyperlinks[:4]:
                 try:
                     print("Processing Link: ", link)
                     
