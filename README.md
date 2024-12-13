@@ -18,6 +18,6 @@
 
 ### TODO
 
-* Add sign-in page
+* ~~Add sign-in page~~
 * Work on Improvement of User engagement. (While scrapping move it to the background and show the previous news)
 * Work on scheduled updation of provided URL by user to make news or articles refreshed.
