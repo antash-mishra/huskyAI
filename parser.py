@@ -54,8 +54,9 @@ def get_domain_hyperlinks(local_domain, url):
         if re.search(HTTP_URL_PATTERN, link):
             # Parse the URL and check if the domain is the same
             url_obj = urlparse(link)
-            if url_obj.netloc == local_domain:
-                clean_link = link
+            # if url_obj.netloc == local_domain:
+            #     clean_link = link
+            clean_link = link
 
         # If the link is not a URL, check if it is a relative link
         else:
@@ -71,7 +72,7 @@ def get_domain_hyperlinks(local_domain, url):
             clean_links.append(clean_link)
 
     # Return the list of hyperlinks that are within the same domain
-    return list(set(clean_links))
+    return clean_links
 
 
 

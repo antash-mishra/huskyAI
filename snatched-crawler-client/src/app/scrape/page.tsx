@@ -39,7 +39,7 @@ export default function ScraperForm() {
       }
 
       // const data: ScrapeResponse = await response.json();
-      router.push('/');
+      router.push('/history');
 
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');

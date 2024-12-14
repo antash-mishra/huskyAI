@@ -8,37 +8,12 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 
-os.getenv("")
-client = OpenAI(
-  base_url = "https://integrate.api.nvidia.com/v1",
-  api_key = "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"
-)
-
-# client_groq = Groq()
-
 client_groq = Groq(
-  api_key=os.getenv("GROQ_API_KEY")
+  api_key=os.environ.get("GROQ_API_KEY")
 )
 
 llm = ChatGroq(model="llama-3.3-70b-versatile")
 
-
-
-# def call_llm(article_text):
-#     completion = client.chat.completions.create(
-#       model="abacusai/dracarys-llama-3.1-70b-instruct",
-#       messages=[{"role": "user", "content": f"Summarize the following article scraped from website: {article_text}"}],
-#       temperature=1,
-#       top_p=1,
-#       max_tokens=1024,
-#       stream=False
-#     )
-#     print("Response LLM: ", completion)
-#     result = completion.choices[0].message.content
-#     print("Response LLM: ", result)
-#     url_type = check_url_type(result)
-
-#     return result, url_type
 
 def call_llm(article_text):
 
@@ -96,33 +71,6 @@ def call_llm(article_text):
   url_type = check_url_type(final_summary)
 
   return final_summary, url_type
-
-
-# def call_llm(article_text):
-#     try:
-#         # Request summary from the NVIDIA LLaMA model using Groq
-#         completion = client_groq.chat.completions.create(
-#             model="llama-3.2-90b-text-preview",
-#             messages=[{"role": "user", "content": f"Summarize the following chunked part of article scraped from website: {article_text}"}],
-#             temperature=1,
-#             top_p=1,
-#             max_tokens=1024,
-#             stream=False
-#         )
-#         print("Response LLM: ", completion)
-        
-#         # Extract the summary text
-#         result = completion.choices[0].message.content
-#         print("Response LLM: ", result)
-        
-#         # Determine URL type based on the result
-#         url_type = check_url_type(result)
-        
-#         return result, url_type
-
-#     except Exception as e:
-#         print(f"Error in call_llm: {e}")
-#         return None, None
 
 
 def check_url_type(article_text):

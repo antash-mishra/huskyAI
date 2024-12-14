@@ -6,8 +6,8 @@ import sqlite3
 import logging 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from celery_app import scrape_and_store
 
-from scrap import get_summary
 from db import init_db
 import jwt
 import datetime
@@ -18,6 +18,11 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+
 CORS(app)
 
 init_db()
@@ -36,37 +41,46 @@ def scrape():
         if not url:
             return jsonify({'error': 'URL is reqiured'}), 400
         
+        # Enqueue the task
+        task = scrape_and_store.delay(url)
 
-        scrapped_data = get_summary(url)
-        logger.warn(f"Scrapped Summary: {scrapped_data}")
+        return jsonify({
+            'success': True,
+            'message': 'Scraping task has been queued.',
+            'task_id': task.id
+        }), 202
 
-        conn = sqlite3.connect('scraper.db')
-        cursor = conn.cursor()
 
-        logger.warn(
-            f"Connection Done: {conn}"
-        )
+        # scrapped_data = get_summary(url)
+        # logger.warn(f"Scrapped Summary: {scrapped_data}")
 
-        try:
-            for entry in scrapped_data:
-                cursor.execute('''
-                    INSERT OR IGNORE INTO summaries (url, page_type, url_summary) 
-                    VALUES (?, ?, ?)
-                ''', (entry['url'], entry['page_type'], entry['url_summary']))
+        # conn = sqlite3.connect('scraper.db')
+        # cursor = conn.cursor()
 
-            conn.commit()
+        # logger.warn(
+        #     f"Connection Done: {conn}"
+        # )
 
-            return jsonify({
-                'success': True,
-                'entry': scrapped_data,
-                'count': len(scrapped_data)
-            })
+        # try:
+        #     for entry in scrapped_data:
+        #         cursor.execute('''
+        #             INSERT OR IGNORE INTO summaries (url, page_type, url_summary) 
+        #             VALUES (?, ?, ?)
+        #         ''', (entry['url'], entry['page_type'], entry['url_summary']))
 
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        #     conn.commit()
+
+        #     return jsonify({
+        #         'success': True,
+        #         'entry': scrapped_data,
+        #         'count': len(scrapped_data)
+        #     })
+
+        # except Exception as e:
+        #     return jsonify({'error': str(e)}), 500
         
-        finally:
-            conn.close()
+        # finally:
+        #     conn.close()
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
