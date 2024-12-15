@@ -26,19 +26,23 @@ def get_localdomain(url):
     extracted_string = match.group(1) if match else None
     return extracted_string
 
-# def clean_text(text):
-#     # Remove unwanted symbols (like \' or \n or any other special characters)
-#     cleaned_text = re.sub(r"[^\w\s,.]", "", text)  # Keeps letters, numbers, spaces, commas, and periods
+def extract_domain_name(url):
+    # Parse the URL
+    parsed_url = urlparse(url)
+    # Get the domain (hostname)
+    hostname = parsed_url.hostname or parsed_url.path
+    # Remove subdomains and top-level domains (TLDs)
+    domain_parts = hostname.split('.')
+    if len(domain_parts) > 2:
+        # For domains with subdomains like news.ycombinator.com
+        return domain_parts[-2]
+    elif len(domain_parts) == 2:
+        # For domains without subdomains like lobste.rs
+        return domain_parts[0]
+    else:
+        # Return as is (rare case)
+        return hostname
 
-#     # Replace multiple spaces with a single space
-#     cleaned_text = re.sub(r"\s+", " ", cleaned_text)
-
-#     #cleaned_text = cleaned_text.replace("\n", " ")
-
-#     # Trim leading and trailing spaces
-#     cleaned_text = cleaned_text.strip()
-    66
-#     return cleaned_text
 
 def remove_elements_with_few_words(arr):
     # Filter out elements where the number of words is less than 3

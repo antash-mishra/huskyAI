@@ -6,7 +6,9 @@ import sqlite3
 import logging 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+
 from celery_app import scrape_and_store
+from scrap import extract_domain_name
 
 from db import init_db
 import jwt
@@ -31,16 +33,53 @@ init_db()
 def hello_world():
     return "<p>Hello, World!</p>"
 
+def save_collection(user_id, url):
+    collection_name = extract_domain_name(url)
+    try:
+        conn = sqlite3.connect('scraper.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO collections (user_id, collection_name, collection_created_date, collection_updated_date)
+            VALUES (?, ?, datetime('now'), datetime('now'))
+        ''', (user_id, collection_name))
+        
+        conn.commit()
+    except Exception as e:
+        logger.error("Collection not saved: {e}")
+
+    finally:
+        conn.close()
+
 @app.route("/api/scrape", methods=["POST"])
 def scrape():
     try:
+        # Extract Token
+        auth_header = request.headers.get('Authorization')
+
+        if not auth_header:
+            return jsonify({'error': 'No token provided'}), 401
+        
+        try:
+            token = auth_header.split(' ')[1]
+            payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=['HS256'])
+            user_id = payload['user_id']  # Get the user_id from the payload
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid token'}), 401
+
+        # Extract body from request
         data = request.get_json()
         url = data.get('url')
-
 
         if not url:
             return jsonify({'error': 'URL is reqiured'}), 400
         
+        try: 
+            save_collection()
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
         # Enqueue the task
         task = scrape_and_store.delay(url)
 
@@ -49,38 +88,6 @@ def scrape():
             'message': 'Scraping task has been queued.',
             'task_id': task.id
         }), 202
-
-
-        # scrapped_data = get_summary(url)
-        # logger.warn(f"Scrapped Summary: {scrapped_data}")
-
-        # conn = sqlite3.connect('scraper.db')
-        # cursor = conn.cursor()
-
-        # logger.warn(
-        #     f"Connection Done: {conn}"
-        # )
-
-        # try:
-        #     for entry in scrapped_data:
-        #         cursor.execute('''
-        #             INSERT OR IGNORE INTO summaries (url, page_type, url_summary) 
-        #             VALUES (?, ?, ?)
-        #         ''', (entry['url'], entry['page_type'], entry['url_summary']))
-
-        #     conn.commit()
-
-        #     return jsonify({
-        #         'success': True,
-        #         'entry': scrapped_data,
-        #         'count': len(scrapped_data)
-        #     })
-
-        # except Exception as e:
-        #     return jsonify({'error': str(e)}), 500
-        
-        # finally:
-        #     conn.close()
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -174,6 +181,23 @@ def get_history():
         return jsonify({'error': str(e)}), 500
 
 
+def save_user(user_id, user_name, email):
+    try:
+        conn = sqlite3.connect('scraper.db')
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT OR IGNORE INTO users (user_id, user_name, email) VALUES (?, ?, ?)
+        ''', (user_id, user_name, email))
+
+        conn.commit()
+
+    except Exception as e:
+       logger.error("User not saved: {e}")
+    
+    finally:
+        conn.close()
+
 @app.route('/auth/google', methods=['POST'])
 def google_auth():
     # Receving google ID token
@@ -190,6 +214,11 @@ def google_auth():
         user_id = id_info['sub']
         email = id_info['email']
         name = id_info['name']
+
+        try:
+            save_user(user_id, user_name=name, email=email)
+        except Exception as e:
+            return jsonify({'error': 'User Sign-In Issue'}), 401
 
         # Create a JWT token for application
         jwt_token = jwt.encode({

@@ -30,3 +30,4 @@
 * Work on scheduled updation of provided URL by user to make news or articles refreshed.
 * Creating collection
 * Way to only show articles in the feed. We are scraping pages which are not articles in the page for ex. headers of page. It shows up in the feed.
+* Change database schema
