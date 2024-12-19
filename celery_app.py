@@ -13,7 +13,7 @@ celery = Celery(
 )
 
 @celery.task
-def scrape_and_store(url):
+def scrape_and_store(collection_id,url):
 
     try:        
         scrapped_data = get_summary(url)
@@ -29,9 +29,9 @@ def scrape_and_store(url):
         try:
             for entry in scrapped_data:
                 cursor.execute('''
-                    INSERT OR IGNORE INTO summaries (url, page_type, url_summary) 
-                    VALUES (?, ?, ?)
-                ''', (entry['url'], entry['page_type'], entry['url_summary']))
+                    INSERT OR IGNORE INTO articles (collection_id, url, summary, isarticle, upvotes, downvotes, title) 
+                    VALUES (?, ?, ?, ?, 0, 0, ?)
+                ''', (collection_id, entry['url'], entry['url_summary'], entry['page_type'], entry['title']))
 
             conn.commit()
         

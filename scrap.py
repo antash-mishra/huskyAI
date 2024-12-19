@@ -7,6 +7,7 @@ import re
 import os
 import asyncio
 from pyppeteer import launch
+from goose3 import Goose
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -19,6 +20,8 @@ import time
 
 from parser import get_domain_hyperlinks
 from llm import call_llm
+
+g = Goose()
 
 def get_localdomain(url):
     regex_pattern = r"https://([^/]+\.com)"
@@ -49,68 +52,87 @@ def remove_elements_with_few_words(arr):
     return [element for element in arr if len(element.split()) >= 3]
 
 def get_webtext(url):
-    local_domain = get_localdomain(url)
-    print("Local domain: ", local_domain)
-
-    #Hyperlinks in the URL
-    url_hyperlink = get_domain_hyperlinks(local_domain=local_domain, url=url)
-    print("URL Hyperlinks: ", url_hyperlink)
 
     # Get the text from the URL using BeautifulSoup
-    soup = BeautifulSoup(requests.get(url).text, "html.parser")
 
+    article = g.extract(url = url)
 
-    text = str(soup.body())
-    cleaned_body_content = clean_body_content(text)
+    cleaned_body_content = article.cleaned_text
+    article_title = article.title
+    # soup = BeautifulSoup(requests.get(url).text, "html.parser")
+    # text = str(soup.body())
+
+    # cleaned_body_content = clean_body_content(text)
     #print("Cleaned body content: ", cleaned_body_content)
         
     #take_screenshot(url, local_domain)    
-    return cleaned_body_content
+    return cleaned_body_content,article_title
 
-def get_summary(url, depth=1, max_depth=2):
+def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=None, cursor=None, conn=None):
+    """
+    Recursively scrape a URL, get content summaries, and navigate nested links up to a given depth.
+    
+    :param url: The starting URL to scrape.
+    :param depth: Current depth of recursion.
+    :param max_depth: Maximum recursion depth allowed.
+    :param processed_urls: Set of URLs already processed to avoid redundancy.
+    :return: A list of summaries for the current and nested URLs.
+    """
     if depth > max_depth:
-        # Prevents excessive recursion
+        # Stop recursion when max depth is reached
         return []
 
-    local_domain = get_localdomain(url)
+    if processed_urls is None:
+        # Initialize the set to track processed URLs
+        processed_urls = set()
+
+    if url in processed_urls:
+        # Skip already processed URLs
+        print(f"Skipping already processed URL: {url}")
+        return []
+
+    print(f"Processing URL at depth {depth}: {url}")
+    processed_urls.add(url)
+
+    local_domain = extract_domain_name(url)
+    print("Local-domain name:", local_domain)
 
     try:
         # Fetch and clean the content from the main URL
-        cleaned_body_content = get_webtext(url)
-        
+        cleaned_body_content, article_title = get_webtext(url)
+
         # Get the summary and page type
         llm_response, url_type = call_llm(cleaned_body_content)
-        
+
         # Initialize the parent response
-        parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response}
+        parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response, "title": article_title}
         all_llm_response = [parent_response]
 
-        # If the page type is "multiple," retrieve hyperlinks for nested scraping
-        if url_type == "multiple":
+        # If the page type is valid, retrieve hyperlinks for nested scraping
+        if url_type:
             url_hyperlinks = get_domain_hyperlinks(local_domain=local_domain, url=url)
+            print(f"Total Number of hyperlinks found: {len(url_hyperlinks)}")
+            unique_links = set(url_hyperlinks) - processed_urls  # Filter only unprocessed links
 
-            for link in url_hyperlinks[:4]:
+            for link in unique_links:
                 try:
-                    print("Processing Link: ", link)
-                    
-                    # Recursively fetch summaries for nested links
-                    nested_summary = get_summary(link, depth=depth + 1, max_depth=max_depth)
-                    print("Nested summary: ", nested_summary)
+                    print(f"Processing nested link: {link}")
 
+                    # Recursively fetch summaries for nested links
+                    nested_summary = get_summary(link, depth=depth + 1, max_depth=max_depth, processed_urls=processed_urls)
                     if nested_summary:
-                        # Append the summary of a nested page if available
                         all_llm_response.extend(nested_summary)
 
                 except Exception as e:
                     print(f"Error processing link {link}: {e}")
-                    # Continue to the next link if an error occurs
-                    continue
+                    continue  # Skip to the next link in case of an error
 
         return all_llm_response
 
     except Exception as e:
         print(f"Error processing URL {url}: {e}")
         return []
+
 
 def clean_body_content(body_content):
     print("Type of body content: ", type(body_content))

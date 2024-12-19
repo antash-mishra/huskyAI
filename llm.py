@@ -12,7 +12,7 @@ client_groq = Groq(
   api_key=os.environ.get("GROQ_API_KEY")
 )
 
-llm = ChatGroq(model="llama-3.3-70b-versatile")
+llm = ChatGroq(model="llama-3.1-70b-versatile")
 
 
 def call_llm(article_text):
@@ -46,7 +46,7 @@ def call_llm(article_text):
   for i,chunk in enumerate(documents):
     context = chunk.page_content
     chunk_summary = map_chain.invoke({"context": context})
-    print("Chunk Summary {i}: ", chunk_summary)
+    print(f"Chunk Summary {i}: ", chunk_summary)
     chunk_summaries.append(chunk_summary)
 
   print(f"Generated summaries for {len(chunk_summaries)} chunks.")
@@ -75,22 +75,10 @@ def call_llm(article_text):
 
 def check_url_type(article_text):
     system_prompt = """
-      You are an article classification tool that receives a summarized version of text from a scraped website. Your task is to determine whether the content contains a single article or multiple articles, with no single article as the center of attention.
-
-   
-      1. **Criteria for Classification**:
-        - If the summary focuses on one main article or topic, respond with "single."
-        - If the summary covers various articles or topics with no clear central article, respond with "multiple."
-
-      2. **Input Format**:
-        - You will receive a summary of the content from a scraped website.
-
-      3. **Output Requirements**:
-        - Your response must be **only** "single" or "multiple" without any additional explanation, context, or information.
-
-      4. **Instructions**:
-        - Analyze the summary to determine if it reflects one single article or multiple articles.
-        - Ensure the output is strictly either "single" or "multiple" and nothing else.
+      Classify the given summary as either 'IsArticle' or 'NotArticle'. Base your classification on the presence of a clear topic, relevant details, organized structure, formal tone, and neutral perspective. Respond with one of the following, and only this exact classification:
+        - IsArticle
+        - NotArticle
+      Wait for the user to provide the summary text.
     """
     message = [
         {"role": "system", "content": system_prompt},

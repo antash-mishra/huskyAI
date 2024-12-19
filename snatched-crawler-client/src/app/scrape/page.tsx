@@ -24,11 +24,14 @@ export default function ScraperForm() {
 
     
     try {
+      const token = localStorage.getItem('auth_token')
+      console.log("Token", token)
       // You can replace this with your actual API route
       const response = await fetch('http://localhost:5000/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ url: inputValue }),
       })

@@ -40,16 +40,18 @@ def save_collection(user_id, url):
         cursor = conn.cursor()
         
         cursor.execute('''
-            INSERT INTO collections (user_id, collection_name, collection_created_date, collection_updated_date)
-            VALUES (?, ?, datetime('now'), datetime('now'))
-        ''', (user_id, collection_name))
+            INSERT INTO collections (user_id, collection_name, url, created_at, updated_at)
+            VALUES (?, ?, ?, datetime('now'), datetime('now'))
+        ''', (user_id, collection_name, url))
         
         conn.commit()
     except Exception as e:
-        logger.error("Collection not saved: {e}")
+        logger.error(f"Collection not saved: {e}")
+        return
 
     finally:
         conn.close()
+        return cursor.lastrowid
 
 @app.route("/api/scrape", methods=["POST"])
 def scrape():
@@ -77,11 +79,12 @@ def scrape():
             return jsonify({'error': 'URL is reqiured'}), 400
         
         try: 
-            save_collection()
+            print("SAVE COLLECTION: ", user_id, url)
+            collection_id = save_collection(user_id=user_id, url=url)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
         # Enqueue the task
-        task = scrape_and_store.delay(url)
+        task = scrape_and_store.delay(collection_id, url)
 
         return jsonify({
             'success': True,
@@ -156,7 +159,7 @@ def get_history():
         conn = sqlite3.connect('scraper.db')
         cursor = conn.cursor()
 
-        cursor.execute('SELECT id, url, page_type, url_summary, upvotes, downvotes FROM summaries')
+        cursor.execute('SELECT article_id as id, url, isarticle as page_type, summary as url_summary, upvotes, downvotes, title FROM articles where isarticle = \'IsArticle\' ')
         rows = cursor.fetchall()
 
         # Structure the data as a list of dictionaries
@@ -168,7 +171,8 @@ def get_history():
                 "page_type": row[2],
                 "url_summary": row[3],
                 "upvotes": row[4],
-                "downvotes": row[5]
+                "downvotes": row[5],
+                "title": row[6],
             }
             history.append(entry)
 
@@ -193,7 +197,7 @@ def save_user(user_id, user_name, email):
         conn.commit()
 
     except Exception as e:
-       logger.error("User not saved: {e}")
+       logger.error(f"User not saved: {e}")
     
     finally:
         conn.close()
@@ -216,6 +220,7 @@ def google_auth():
         name = id_info['name']
 
         try:
+            print("SAVE USER: ", user_id, email, name)
             save_user(user_id, user_name=name, email=email)
         except Exception as e:
             return jsonify({'error': 'User Sign-In Issue'}), 401

@@ -11,6 +11,7 @@ export interface ScrapingResult {
     url_summary: string;
     upvotes: number;
     downvotes: number;
+    title: string;
   }  
   
   export type ScrapeResponse = ScrapedUrl[];

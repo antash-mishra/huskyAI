@@ -133,7 +133,7 @@ export default function HistoryPage() {
                     rel="noopener noreferrer"
                     className="text-blue-500 hover:underline"
                   >
-                    {item.url}
+                    {item.title}
                   </a>
                 </CardTitle>
                 <div className="flex items-center space-x-2">
