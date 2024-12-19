@@ -101,12 +101,24 @@ def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=No
         # Fetch and clean the content from the main URL
         cleaned_body_content, article_title = get_webtext(url)
 
+        if clean_body_content != '':
         # Get the summary and page type
-        llm_response, url_type = call_llm(cleaned_body_content)
+            llm_response, url_type = call_llm(cleaned_body_content)
+        else:
+            llm_response = ''
+            url_type = 'NotArticle'
 
         # Initialize the parent response
         parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response, "title": article_title}
-        all_llm_response = [parent_response]
+        
+        if cursor and collection_id is not None:
+            cursor.execute('''
+                INSERT OR IGNORE INTO articles (collection_id, url, summary, isarticle, upvotes, downvotes, title) 
+                VALUES (?, ?, ?, ?, 0, 0, ?)
+            ''', (collection_id, url, llm_response, url_type, article_title))
+
+            conn.commit()
+            print(f"Inserted article into database: {url}")
 
         # If the page type is valid, retrieve hyperlinks for nested scraping
         if url_type:
@@ -119,15 +131,12 @@ def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=No
                     print(f"Processing nested link: {link}")
 
                     # Recursively fetch summaries for nested links
-                    nested_summary = get_summary(link, depth=depth + 1, max_depth=max_depth, processed_urls=processed_urls)
-                    if nested_summary:
-                        all_llm_response.extend(nested_summary)
+                    get_summary(link, depth=depth + 1, max_depth=max_depth, processed_urls=processed_urls,
+                                collection_id=collection_id, cursor=cursor, conn=conn)
 
                 except Exception as e:
                     print(f"Error processing link {link}: {e}")
                     continue  # Skip to the next link in case of an error
-
-        return all_llm_response
 
     except Exception as e:
         print(f"Error processing URL {url}: {e}")
