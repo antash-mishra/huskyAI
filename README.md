@@ -31,3 +31,4 @@
 * Creating collection
 * Way to only show articles in the feed. We are scraping pages which are not articles in the page for ex. headers of page. It shows up in the feed.
 * Change database schema
+* Develop quantized LLM model for classification of scrapped text from article
