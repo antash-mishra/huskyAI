@@ -23,6 +23,16 @@ llama_llm = Llama.from_pretrained(
 
 callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
+llama_llm = Llama.from_pretrained(
+	repo_id="antash420/Llama-3.1-8B-Instruct-Q5_K_S-GGUF",
+	filename="llama-3.1-8b-instruct-q5_k_s.gguf",
+	n_gpu_layers=1,
+    flash_attn=True
+)
+
+
+callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
+
 client_groq = Groq(
   api_key=os.environ.get("GROQ_API_KEY")
 )
