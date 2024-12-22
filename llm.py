@@ -9,7 +9,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.llms import llamacpp
 from langchain_core.callbacks import CallbackManager, StreamingStdOutCallbackHandler
 from llama_cpp import Llama
+import logging
 
+logger = logging.getLogger(__name__)
 
 llama_llm = Llama.from_pretrained(
 	repo_id="antash420/Llama-3.1-8B-Instruct-Q5_K_S-GGUF",
@@ -44,7 +46,7 @@ def call_llm(article_text):
 
   documents = [Document(page_content=chunk) for chunk in split_docs]
 
-  print(f"Generated {len(documents)} documents.")
+  logger.info(f"Generated {len(documents)} documents.")
 
   map_prompt = ChatPromptTemplate.from_messages(
     [("human", 
@@ -57,10 +59,10 @@ def call_llm(article_text):
   for i,chunk in enumerate(documents):
     context = chunk.page_content
     chunk_summary = map_chain.invoke({"context": context})
-    print(f"Chunk Summary {i}: ", chunk_summary)
+    logger.info(f"Chunk Summary {i}: ", chunk_summary)
     chunk_summaries.append(chunk_summary)
 
-  print(f"Generated summaries for {len(chunk_summaries)} chunks.")
+  logger.info(f"Generated summaries for {len(chunk_summaries)} chunks.")
 
   # Step 3: Reduce all summaries into a single consolidated summary
   reduce_template = """
@@ -97,5 +99,5 @@ def check_url_type(article_text):
             {"role": "user", "content": article_text},
         ]
     )
-    print("IsArticle: ", response)
+    logger.info("IsArticle: ", response)
     return response['choices'][0]['message']['content']

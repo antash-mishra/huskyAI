@@ -94,7 +94,7 @@ def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=No
         logger.info(f"Skipping already processed URL: {url}")
         return []
 
-    print(f"Processing URL at depth {depth}: {url}")
+    logger.info(f"Processing URL at depth {depth}: {url}")
     processed_urls.add(url)
 
     local_domain = extract_domain_name(url)
@@ -121,7 +121,7 @@ def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=No
             ''', (collection_id, url, llm_response, url_type, article_title))
 
             conn.commit()
-            print(f"Inserted article into database: {url}")
+            logger.info(f"Inserted article into database: {url}")
 
         # If the page type is valid, retrieve hyperlinks for nested scraping
         if url_type:
@@ -147,7 +147,7 @@ def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=No
 
 
 def clean_body_content(body_content):
-    print("Type of body content: ", type(body_content))
+    
     soup = BeautifulSoup(body_content, "html.parser")
 
     for script_or_style in soup(["script", "style"]):

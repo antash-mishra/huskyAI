@@ -14,6 +14,9 @@ from bs4 import BeautifulSoup
 from collections import deque
 import requests
 from typing import Set
+import logging
+
+logger = logging.getLogger(__name__)
 
 def is_valid_webpage_url(url: str) -> bool:
     """
@@ -125,7 +128,7 @@ def get_domain_hyperlinks(local_domain, url: str, wait_time: int = 10) -> Set[st
             # Additional wait for dynamic content
             time.sleep(2)
         except TimeoutException:
-            print(f"Warning: Page took longer than {wait_time} seconds to load")
+            logger.info(f"Warning: Page took longer than {wait_time} seconds to load")
         
         # Execute JavaScript to get all href attributes
         links = driver.execute_script("""
@@ -142,7 +145,7 @@ def get_domain_hyperlinks(local_domain, url: str, wait_time: int = 10) -> Set[st
                     absolute_url = urljoin(url, href)
                     unique_links.add(absolute_url)
             except Exception as e:
-                print(f"Error processing link {href}: {str(e)}")
+                logger.info(f"Error processing link {href}: {str(e)}")
         
         # Backup method: try to get any links that might have been missed
         try:
@@ -160,57 +163,13 @@ def get_domain_hyperlinks(local_domain, url: str, wait_time: int = 10) -> Set[st
                     continue
                     
         except Exception as e:
-            print(f"Backup link extraction encountered an error: {str(e)}")
+            logger.error(f"Backup link extraction encountered an error: {str(e)}")
             
         return unique_links
     
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        logger.error(f"An error occurred: {str(e)}")
         return set()
     
     finally:
         driver.quit()
-
-
-
-def crawl(url):
-    
-    local_domain = urlparse(url=url).netloc
-
-    queue = deque([url])
-
-    seen = set([url])
-
-    # Create a directory to store the text files
-    if not os.path.exists("text/"):
-        os.mkdir("text/")
-
-    if not os.path.exists("text/"+local_domain+"/"):
-        os.mkdir("text/" + local_domain + "/")
-
-    if not os.path.exists("processed"):
-        os.mkdir("processed")
-
-    while queue:
-        url = queue.pop()
-        
-        print("URLS: ", url) # for debugging and to see the progress
-
-        with open('text/'+local_domain+'/'+url[8:].replace("/", "_") + ".txt", "w", encoding="UTF-8") as f:
-
-            # Get the text from the URL using BeautifulSoup
-            soup = BeautifulSoup(requests.get(url).text, "html.parser")
-
-
-            text = soup.get_text()
-
-            # If the crawler gets to a page that requires JavaScript, it will stop the crawl
-            if ("You need to enable JavaScript to run this app." in text):
-                print("Unable to parse page " + url + " due to JavaScript being required")
-
-            f.write(text)
-
-        for link in get_domain_hyperlinks(local_domain, url):
-            if link not in seen:
-                queue.append(link)
-                seen.add(link)
