@@ -6,15 +6,16 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Search } from "lucide-react"
+import {token_store, base_url} from "@/shared/consts"
 
 import { ScrapeResponse, ApiError } from '@/types/scraping';
+
 
 export default function ScraperForm() {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('');
   const router = useRouter();
-
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,10 +25,10 @@ export default function ScraperForm() {
 
     
     try {
-      const token = localStorage.getItem('auth_token')
-      console.log("Token", token)
+      const token = localStorage.getItem(token_store)
+
       // You can replace this with your actual API route
-      const response = await fetch('http://localhost:5000/api/scrape', {
+      const response = await fetch(base_url +'/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
