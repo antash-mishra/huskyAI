@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GoogleLogin, GoogleOAuthProvider, CredentialResponse } from '@react-oauth/google';
 
 import { useUser } from '../../context/UserContext';
+import { base_url, token_store } from '@/shared/consts';
 
 
 // Define types for user and error
@@ -19,7 +20,7 @@ const GoogleSignIn = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() =>  {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem(token_store);
         if (token) {
             verifyToken(token);
         }
@@ -34,7 +35,7 @@ const GoogleSignIn = () => {
         
         try {
 
-            const response = await fetch('http://localhost:5000/auth/google', {
+            const response = await fetch(base_url + '/auth/google', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -49,7 +50,7 @@ const GoogleSignIn = () => {
             
             const data = await response.json()
             console.log("Data: ", data)
-            localStorage.setItem('auth_token', data.token)
+            localStorage.setItem(token_store, data.token)
 
             // Set user information
             setUser(data.user);
@@ -63,7 +64,7 @@ const GoogleSignIn = () => {
 
     const verifyToken = async (token: string) => {
         try {
-            const response = await fetch('http://localhost:5000/auth/verify', {
+            const response = await fetch( base_url + '/auth/verify', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -79,7 +80,7 @@ const GoogleSignIn = () => {
             setUser(data.user);
         }
         catch (err) {
-            localStorage.removeItem('auth_token');
+            localStorage.removeItem(token_store);
             setError(err instanceof Error ? err.message : 'Token verification failed');
         }
     }
@@ -89,7 +90,7 @@ const GoogleSignIn = () => {
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('auth_token')
+        localStorage.removeItem(token_store)
         setUser(null)
         router.push('/');
     };
