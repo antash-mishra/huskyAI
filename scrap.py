@@ -1,4 +1,5 @@
 import requests
+import logging
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 from collections import deque
@@ -20,6 +21,8 @@ import time
 
 from parser import get_domain_hyperlinks
 from llm import call_llm
+
+logger = logging.getLogger(__name__)
 
 g = Goose()
 
@@ -88,54 +91,63 @@ def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=No
 
     if url in processed_urls:
         # Skip already processed URLs
-        print(f"Skipping already processed URL: {url}")
+        logger.info(f"Skipping already processed URL: {url}")
         return []
 
-    print(f"Processing URL at depth {depth}: {url}")
+    logger.info(f"Processing URL at depth {depth}: {url}")
     processed_urls.add(url)
 
     local_domain = extract_domain_name(url)
-    print("Local-domain name:", local_domain)
+    logger.info(f"Local-domain name: {local_domain}")
 
     try:
         # Fetch and clean the content from the main URL
         cleaned_body_content, article_title = get_webtext(url)
 
+        if clean_body_content != '':
         # Get the summary and page type
-        llm_response, url_type = call_llm(cleaned_body_content)
+            llm_response, url_type = call_llm(cleaned_body_content)
+        else:
+            llm_response = ''
+            url_type = 'NotArticle'
 
         # Initialize the parent response
         parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response, "title": article_title}
-        all_llm_response = [parent_response]
+        
+        if cursor and collection_id is not None:
+            cursor.execute('''
+                INSERT OR IGNORE INTO articles (collection_id, url, summary, isarticle, upvotes, downvotes, title) 
+                VALUES (?, ?, ?, ?, 0, 0, ?)
+            ''', (collection_id, url, llm_response, url_type, article_title))
+
+            conn.commit()
+            logger.info(f"Inserted article into database: {url}")
 
         # If the page type is valid, retrieve hyperlinks for nested scraping
         if url_type:
             url_hyperlinks = get_domain_hyperlinks(local_domain=local_domain, url=url)
-            print(f"Total Number of hyperlinks found: {len(url_hyperlinks)}")
+            logger.info(f"Total Number of hyperlinks found: {len(url_hyperlinks)}")
             unique_links = set(url_hyperlinks) - processed_urls  # Filter only unprocessed links
 
             for link in unique_links:
                 try:
-                    print(f"Processing nested link: {link}")
+                    logger.info(f"Processing nested link: {link}")
 
                     # Recursively fetch summaries for nested links
-                    nested_summary = get_summary(link, depth=depth + 1, max_depth=max_depth, processed_urls=processed_urls)
-                    if nested_summary:
-                        all_llm_response.extend(nested_summary)
+                    get_summary(link, depth=depth + 1, max_depth=max_depth, processed_urls=processed_urls,
+                                collection_id=collection_id, cursor=cursor, conn=conn)
 
                 except Exception as e:
-                    print(f"Error processing link {link}: {e}")
+                    logger.error(f"Error processing link {link}: {e}")
                     continue  # Skip to the next link in case of an error
 
-        return all_llm_response
-
     except Exception as e:
-        print(f"Error processing URL {url}: {e}")
+        logger.error(f"Error processing URL {url}: {e}")
         return []
 
 
 def clean_body_content(body_content):
-    print("Type of body content: ", type(body_content))
+    
     soup = BeautifulSoup(body_content, "html.parser")
 
     for script_or_style in soup(["script", "style"]):
@@ -159,5 +171,3 @@ def split_dom_content(dom_content, max_length=6000):
     return [
         dom_content[i : i + max_length] for i in range(0, len(dom_content), max_length)
     ]
-
-

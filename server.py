@@ -79,7 +79,7 @@ def scrape():
             return jsonify({'error': 'URL is reqiured'}), 400
         
         try: 
-            print("SAVE COLLECTION: ", user_id, url)
+            logger.info("SAVE COLLECTION: {user_id} {url}")
             collection_id = save_collection(user_id=user_id, url=url)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -99,18 +99,17 @@ def scrape():
 @app.route('/history/<int:id>/upvote', methods=['POST'])
 def upvote(id):
     try:
-        print(type(id))
+        
         conn = sqlite3.connect('scraper.db')
         cursor = conn.cursor()
 
         # Retrieve the current upvotes
         cursor.execute('SELECT upvotes FROM summaries WHERE id = ?', (id,))
         row = cursor.fetchone()
-        print("Row: ", row[0])
+        logger.info(f"Row: {row[0]}")
         if row is None:
             return jsonify({"error": "Item not found"}), 404
 
-        print("Type in db: ", type(row[0]))
         # Increment the upvotes count
         new_upvotes = row[0] + 1
         cursor.execute('UPDATE summaries SET upvotes = ? WHERE id = ?', (new_upvotes, id))
@@ -220,7 +219,7 @@ def google_auth():
         name = id_info['name']
 
         try:
-            print("SAVE USER: ", user_id, email, name)
+            logger.info(f"SAVE USER: {user_id} {email} {name}")
             save_user(user_id, user_name=name, email=email)
         except Exception as e:
             return jsonify({'error': 'User Sign-In Issue'}), 401

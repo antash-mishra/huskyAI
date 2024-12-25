@@ -6,7 +6,22 @@ from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTe
 from langchain.docstore.document import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_community.llms import llamacpp
+from langchain_core.callbacks import CallbackManager, StreamingStdOutCallbackHandler
+from llama_cpp import Llama
+import logging
 
+logger = logging.getLogger(__name__)
+
+llama_llm = Llama.from_pretrained(
+	repo_id="antash420/Llama-3.1-8B-Instruct-Q5_K_S-GGUF",
+	filename="llama-3.1-8b-instruct-q5_k_s.gguf",
+	n_gpu_layers=1,
+    flash_attn=True
+)
+
+
+callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
 client_groq = Groq(
   api_key=os.environ.get("GROQ_API_KEY")
@@ -16,8 +31,6 @@ llm = ChatGroq(model="llama-3.1-70b-versatile")
 
 
 def call_llm(article_text):
-
-  print("TYpe: ", type(article_text))
 
   # Use a text splitter optimized for longer documents
   text_splitter = text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
@@ -33,7 +46,7 @@ def call_llm(article_text):
 
   documents = [Document(page_content=chunk) for chunk in split_docs]
 
-  print(f"Generated {len(documents)} documents.")
+  logger.info(f"Generated {len(documents)} documents.")
 
   map_prompt = ChatPromptTemplate.from_messages(
     [("human", 
@@ -46,10 +59,10 @@ def call_llm(article_text):
   for i,chunk in enumerate(documents):
     context = chunk.page_content
     chunk_summary = map_chain.invoke({"context": context})
-    print(f"Chunk Summary {i}: ", chunk_summary)
+    logger.info(f"Chunk Summary {i}: ", chunk_summary)
     chunk_summaries.append(chunk_summary)
 
-  print(f"Generated summaries for {len(chunk_summaries)} chunks.")
+  logger.info(f"Generated summaries for {len(chunk_summaries)} chunks.")
 
   # Step 3: Reduce all summaries into a single consolidated summary
   reduce_template = """
@@ -72,29 +85,19 @@ def call_llm(article_text):
 
   return final_summary, url_type
 
-
 def check_url_type(article_text):
     system_prompt = """
-      Classify the given summary as either 'IsArticle' or 'NotArticle'. Base your classification on the presence of a clear topic, relevant details, organized structure, formal tone, and neutral perspective. Respond with one of the following, and only this exact classification:
-        - IsArticle
-        - NotArticle
-      Wait for the user to provide the summary text.
+    Classify the given summary as either 'IsArticle' or 'NotArticle'. Base your classification on the presence of a clear topic, relevant details, organized structure, formal tone, and neutral perspective. Respond with one of the following, and only this exact classification:
+    - IsArticle
+    - NotArticle
+    Wait for the user to provide the summary text.
     """
-    message = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": article_text},
-    ]
-    completion = client_groq.chat.completions.create(
-        model="llama-3.1-70b-versatile",
-        messages=message,
-        temperature=1,
-        top_p=1,
-        max_tokens=1024,
-        stream=False
+
+    response = llama_llm.create_chat_completion(
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": article_text},
+        ]
     )
-    result = completion.choices[0].message.content
-    print("Response LLM: ", result)
-
-    return result
-
-
+    logger.info("IsArticle: ", response)
+    return response['choices'][0]['message']['content']

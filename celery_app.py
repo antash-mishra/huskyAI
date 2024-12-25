@@ -16,28 +16,27 @@ celery = Celery(
 def scrape_and_store(collection_id,url):
 
     try:        
-        scrapped_data = get_summary(url)
-        logger.warn(f"Scrapped Summary: {scrapped_data}")
-
+        # Create connection with sqlite and create cursor for execution
         conn = sqlite3.connect('scraper.db')
         cursor = conn.cursor()
-
-        logger.warn(
+        logger.info(
             f"Connection Done: {conn}"
         )
 
-        try:
-            for entry in scrapped_data:
-                cursor.execute('''
-                    INSERT OR IGNORE INTO articles (collection_id, url, summary, isarticle, upvotes, downvotes, title) 
-                    VALUES (?, ?, ?, ?, 0, 0, ?)
-                ''', (collection_id, entry['url'], entry['url_summary'], entry['page_type'], entry['title']))
-
-            conn.commit()
-        
-        finally:
-            conn.close()
+        # Call get_summary to get summary and other paarmeters 
+        # and save in the articles table in database
+        get_summary(
+            url,
+            collection_id=collection_id,
+            cursor=cursor,
+            conn=conn
+        )
+        logger.info(f"Scrapped Done")
 
     except Exception as e:
         logger.error(f"Error in scrape_and_store: {e}")
         raise e
+    
+    finally:
+        conn.close()
+        logger.info(f"database connection closed")
