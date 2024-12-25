@@ -18,6 +18,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+<<<<<<< HEAD
 def is_valid_webpage_url(url: str) -> bool:
     """
     Check if the URL is a valid webpage link (not mailto, tel, javascript, anchor, etc.)
@@ -173,3 +174,69 @@ def get_domain_hyperlinks(local_domain, url: str, wait_time: int = 10) -> Set[st
     
     finally:
         driver.quit()
+=======
+
+class HyperlinkParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.hyperlinks = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+
+        if tag == "a" and "href" in attrs:   
+            self.hyperlinks.append(attrs["href"])
+
+def get_hyperlinks(url):
+
+    # Try to open the URL and read the HTML
+    try:
+        # Open the URL and read the HTML
+        with urllib.request.urlopen(url) as response:
+
+            # If the response is not HTML, return an empty list
+            if not response.info().get('Content-Type').startswith("text/html"):
+                return []
+
+            # Decode the HTML
+            html = response.read().decode('utf-8')
+    except Exception as e:
+        print(e)
+        return []
+
+    # Create the HTML Parser and then Parse the HTML to get hyperlinks
+    parser = HyperlinkParser()
+    parser.feed(html)
+
+    return parser.hyperlinks
+
+
+def get_domain_hyperlinks(local_domain, url):
+    clean_links = []
+    for link in set(get_hyperlinks(url)):
+        clean_link = None
+
+        # If the link is a URL, check if it is within the same domain
+        if re.search(HTTP_URL_PATTERN, link):
+            # Parse the URL and check if the domain is the same
+            url_obj = urlparse(link)
+            # if url_obj.netloc == local_domain:
+            #     clean_link = link
+            clean_link = link
+
+        # If the link is not a URL, check if it is a relative link
+        else:
+            if link.startswith("/"):
+                link = link[1:]
+            elif link.startswith("#") or link.startswith("mailto:"):
+                continue
+            clean_link = "https://" + local_domain + "/" + link
+
+        if clean_link is not None:
+            if clean_link.endswith("/"):
+                clean_link = clean_link[:-1]
+            clean_links.append(clean_link)
+
+    # Return the list of hyperlinks that are within the same domain
+    return clean_links
+>>>>>>> 0859a9c (deployment changes)

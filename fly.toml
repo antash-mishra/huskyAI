@@ -1,5 +1,15 @@
+<<<<<<< HEAD
 app = "snatched-crawler-morning-firefly-8195"
 primary_region = "bom"
+=======
+# fly.toml app configuration file generated for snatched-crawler-morning-firefly-8195 on 2024-11-01T22:52:08Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'snatched-crawler-morning-firefly-8195'
+primary_region = 'bom'
+>>>>>>> 0859a9c (deployment changes)
 
 [build]
   dockerfile = "Dockerfile"

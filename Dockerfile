@@ -7,7 +7,11 @@ FROM python:${PYTHON_VERSION}-slim AS backend-build
 WORKDIR /app
 
 # Install required system dependencies
+<<<<<<< HEAD
 RUN apt-get update && apt-get install -y python3-venv  && rm -rf /var/lib/apt/lists/*
+=======
+RUN apt-get update && apt-get install -y python3-venv && rm -rf /var/lib/apt/lists/*
+>>>>>>> 0859a9c (deployment changes)
 
 # Copy requirements first for better cache utilization
 COPY requirements.txt .
@@ -23,6 +27,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 5000
+<<<<<<< HEAD
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
@@ -30,3 +35,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Backend runtime command
 CMD ["flask", "--app", "server", "run", "--host", "0.0.0.0", "--debug"]
 
+=======
+# Backend runtime command
+CMD ["flask", "--app", "server", "run", "--host", "0.0.0.0", "--debug"]
+>>>>>>> 0859a9c (deployment changes)
