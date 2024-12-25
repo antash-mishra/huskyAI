@@ -27,8 +27,11 @@
 
 * ~~Add sign-in page~~
 * ~~Work on Improvement of User engagement. (While scrapping move it to the background and show the previous news)~~
+* ~~Creating collection~~
+* ~~Way to only show articles in the feed. We are scraping pages which are not articles in the page for ex. headers of page. It shows up in the feed?~~
+* ~~Develop quantized LLM model for classification of scrapped text (Article or Not)~~
 * Work on scheduled updation of provided URL by user to make news or articles refreshed.
-* Creating collection
-* Way to only show articles in the feed. We are scraping pages which are not articles in the page for ex. headers of page. It shows up in the feed.
 * Change database schema
-* Develop quantized LLM model for classification of scrapped text (Article or Not)
+* Way to scrape each collection only once but add in collection for each user
+* Show recommendation for collections that can be scrapped.
+* Future Work: Rightnow we add the whole url of the website that needs to be scrapped. Way that user don't need to write the url but just the source name and get recommendation or something. 
