@@ -21,13 +21,15 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
-
-
-CORS(app)
+DATABASE_URL = "/data/scraper.db"
+app.config['CELERY_BROKER_URL'] = os.getenv('CELERY_BROKER_URL')
+app.config['CELERY_RESULT_BACKEND'] = os.getenv('CELERY_RESULT_BACKEND')
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 
 init_db()
+CORS(app)
+
+print(f"Database Path: {os.path.abspath(DATABASE_URL)}")
 
 @app.route("/")
 def hello_world():
@@ -36,7 +38,7 @@ def hello_world():
 def save_collection(user_id, url):
     collection_name = extract_domain_name(url)
     try:
-        conn = sqlite3.connect('scraper.db')
+        conn = sqlite3.connect(DATABASE_URL, check_same_thread=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -44,14 +46,21 @@ def save_collection(user_id, url):
             VALUES (?, ?, ?, datetime('now'), datetime('now'))
         ''', (user_id, collection_name, url))
         
+        # Fetch the last inserted ID
+        cursor.execute('SELECT last_insert_rowid()')
+        collection_id = cursor.fetchone()[0]
+        
         conn.commit()
+        print("Collection ID: ", collection_id)
+        return collection_id  # Return the fetched collection ID
+
     except Exception as e:
         logger.error(f"Collection not saved: {e}")
-        return
+        return None
 
     finally:
         conn.close()
-        return cursor.lastrowid
+        
 
 @app.route("/api/scrape", methods=["POST"])
 def scrape():
@@ -65,6 +74,7 @@ def scrape():
         try:
             token = auth_header.split(' ')[1]
             payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=['HS256'])
+            print("Payload: ", payload)
             user_id = payload['user_id']  # Get the user_id from the payload
         except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Token has expired'}), 401
@@ -79,7 +89,7 @@ def scrape():
             return jsonify({'error': 'URL is reqiured'}), 400
         
         try: 
-            logger.info("SAVE COLLECTION: {user_id} {url}")
+            logger.info(f"SAVE COLLECTION: {user_id} {url}")
             collection_id = save_collection(user_id=user_id, url=url)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -100,7 +110,7 @@ def scrape():
 def upvote(id):
     try:
         
-        conn = sqlite3.connect('scraper.db')
+        conn = sqlite3.connect(DATABASE_URL)
         cursor = conn.cursor()
 
         # Retrieve the current upvotes
@@ -127,7 +137,7 @@ def upvote(id):
 @app.route('/history/<int:id>/downvote', methods=['POST'])
 def downvote(id):
     try:
-        conn = sqlite3.connect('scraper.db')
+        conn = sqlite3.connect(DATABASE_URL)
         cursor = conn.cursor()
 
         # Retrieve the current upvotes
@@ -155,12 +165,32 @@ def downvote(id):
 def get_history():
 
     try:
-        conn = sqlite3.connect('scraper.db')
+        user_email = request.headers.get('User-Email')
+
+        conn = sqlite3.connect(DATABASE_URL)
         cursor = conn.cursor()
-
-        cursor.execute('SELECT article_id as id, url, isarticle as page_type, summary as url_summary, upvotes, downvotes, title FROM articles where isarticle = \'IsArticle\' ')
+        cursor.execute("""
+            SELECT 
+                articles.article_id as id,
+                articles.url,
+                articles.isarticle as page_type,
+                articles.summary as url_summary,
+                articles.upvotes,
+                articles.downvotes,
+                articles.title
+            FROM 
+                articles
+            JOIN 
+                collections ON articles.collection_id = collections.collection_id
+            JOIN 
+                users ON collections.user_id = users.id
+            WHERE 
+                isarticle = \'IsArticle\' and users.email = ?;
+        """, (user_email,))
+        
         rows = cursor.fetchall()
-
+        logger.info(f"History Connection: {conn}")
+        logger.info(f"History Entry2: {rows}")
         # Structure the data as a list of dictionaries
         history = []
         for row in rows:
@@ -174,7 +204,8 @@ def get_history():
                 "title": row[6],
             }
             history.append(entry)
-
+            
+            print(f"History Entry: {entry}")
         # Close the database connection
         conn.close()
 
@@ -186,7 +217,7 @@ def get_history():
 
 def save_user(user_id, user_name, email):
     try:
-        conn = sqlite3.connect('scraper.db')
+        conn = sqlite3.connect(DATABASE_URL)
         cursor = conn.cursor()
 
         cursor.execute('''
@@ -205,7 +236,8 @@ def save_user(user_id, user_name, email):
 def google_auth():
     # Receving google ID token
     token = request.json.get('token')
-
+    print("Token: ", token)
+    print("Google Client ID: ", os.getenv("GOOGLE_CLIENT_ID"))
     try:
         # Verify Google ID Token
         id_info = id_token.verify_oauth2_token(
@@ -213,11 +245,13 @@ def google_auth():
             google_requests.Request(),
              os.getenv("GOOGLE_CLIENT_ID")
         )
+        
+        print("\nID INFO: ", id_info)
 
         user_id = id_info['sub']
         email = id_info['email']
         name = id_info['name']
-
+            
         try:
             logger.info(f"SAVE USER: {user_id} {email} {name}")
             save_user(user_id, user_name=name, email=email)
@@ -238,7 +272,7 @@ def google_auth():
                             'email': email,
                             'name': name
                         }}), 200
-    except ValueError:
+    except ValueError as e:
         return jsonify({'error': 'No token provided'}), 401
 
 @app.route('/auth/verify', methods=['GET'])
@@ -267,7 +301,30 @@ def verify_token():
         return jsonify({'error': 'Token has expired'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Invalid token'}), 401
+    
+
+@app.route('/health')
+def health_check():
+    # Log the database path being used
+    db_path = os.path.abspath(DATABASE_URL)
+    conn = sqlite3.connect(DATABASE_URL)
+    print(f"Database path: {db_path}")
+    print(f"Database conn: {conn}")
+    conn.close()
+    return {"status": "ok", "db_path": db_path}, 200
+
+@app.route('/test-db')
+def test_db():
+    try:
+        conn = sqlite3.connect('/data/scraper.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM articles;")
+        tables = cursor.fetchall()
+        conn.close()
+        return {"tables": tables}
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
