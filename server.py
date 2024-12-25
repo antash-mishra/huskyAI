@@ -46,7 +46,7 @@ def save_collection(user_id, url):
             VALUES (?, ?, ?, datetime('now'), datetime('now'))
         ''', (user_id, collection_name, url))
         
-        # Fetch the last inserted ID
+	# Fetch the last inserted ID
         cursor.execute('SELECT last_insert_rowid()')
         collection_id = cursor.fetchone()[0]
         
@@ -60,7 +60,6 @@ def save_collection(user_id, url):
 
     finally:
         conn.close()
-        
 
 @app.route("/api/scrape", methods=["POST"])
 def scrape():
@@ -74,7 +73,6 @@ def scrape():
         try:
             token = auth_header.split(' ')[1]
             payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=['HS256'])
-            print("Payload: ", payload)
             user_id = payload['user_id']  # Get the user_id from the payload
         except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Token has expired'}), 401
@@ -160,12 +158,12 @@ def downvote(id):
     finally:
         conn.close()
 
-
 @app.route("/history", methods=["GET"])
 def get_history():
 
     try:
         user_email = request.headers.get('User-Email')
+        print("Email: ", user_email)
 
         conn = sqlite3.connect(DATABASE_URL)
         cursor = conn.cursor()
@@ -183,7 +181,7 @@ def get_history():
             JOIN 
                 collections ON articles.collection_id = collections.collection_id
             JOIN 
-                users ON collections.user_id = users.id
+                users ON collections.user_id = users.user_id
             WHERE 
                 isarticle = \'IsArticle\' and users.email = ?;
         """, (user_email,))
@@ -236,22 +234,21 @@ def save_user(user_id, user_name, email):
 def google_auth():
     # Receving google ID token
     token = request.json.get('token')
-    print("Token: ", token)
-    print("Google Client ID: ", os.getenv("GOOGLE_CLIENT_ID"))
+    print(f"Token:  {token}")
+    print(f"Google Client ID: {os.getenv("GOOGLE_CLIENT_ID")}")
+    
     try:
         # Verify Google ID Token
         id_info = id_token.verify_oauth2_token(
             token,
             google_requests.Request(),
-             os.getenv("GOOGLE_CLIENT_ID")
+            "446693240644-4gmvke40c3nocdc7itoqcjb6pp4q1hfe.apps.googleusercontent.com"
         )
-        
-        print("\nID INFO: ", id_info)
 
         user_id = id_info['sub']
         email = id_info['email']
         name = id_info['name']
-            
+
         try:
             logger.info(f"SAVE USER: {user_id} {email} {name}")
             save_user(user_id, user_name=name, email=email)
@@ -273,7 +270,7 @@ def google_auth():
                             'name': name
                         }}), 200
     except ValueError as e:
-        return jsonify({'error': 'No token provided'}), 401
+        return jsonify({'error': e}), 401
 
 @app.route('/auth/verify', methods=['GET'])
 def verify_token():

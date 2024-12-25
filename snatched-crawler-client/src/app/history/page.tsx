@@ -1,4 +1,3 @@
-// app/history/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
@@ -8,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
 import { ScrapedUrl, ApiError} from '@/types/scraping';
-import { base_url } from '@/shared/consts';
+import { base_url, user_detail_store } from '@/shared/consts';
 
 
 
@@ -17,15 +16,35 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch(base_url + '/history');
+        setLoading(true);
+
+        // Retrieve email from localStorage when fetching history
+        const storedEmail = localStorage.getItem(user_detail_store);
+        if (storedEmail) {
+          setEmail(storedEmail);
+        } else {
+          console.error("No email found in localStorage");
+          throw new Error('User email is missing');
+        }
+
+        const response = await fetch(base_url + '/history', {
+          method: 'GET', // Specify the HTTP method
+          headers: {
+            'Content-Type': 'application/json', // Ensure the server knows the request payload type
+            'User-Email': storedEmail, // Include the retrieved email in the custom header
+          },
+        });
+
         if (!response.ok) {
           const errorData: ApiError = await response.json();
           throw new Error(errorData.error || 'Failed to fetch history');
         }
+
         const data: ScrapedUrl[] = await response.json();
         setHistory(data);
       } catch (err) {
@@ -132,7 +151,7 @@ export default function HistoryPage() {
                     href={item.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
+                    className="text-blue-500 hover:underline visited:text-purple-600"
                   >
                     {item.title}
                   </a>

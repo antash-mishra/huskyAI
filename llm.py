@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from openai import OpenAI
 from groq import Groq
 import os
@@ -10,31 +11,18 @@ from langchain_community.llms import llamacpp
 from langchain_core.callbacks import CallbackManager, StreamingStdOutCallbackHandler
 from llama_cpp import Llama
 import logging
+import openai
 
 logger = logging.getLogger(__name__)
+load_dotenv()  
 
-llama_llm = Llama.from_pretrained(
-	repo_id="antash420/Llama-3.1-8B-Instruct-Q5_K_S-GGUF",
-	filename="llama-3.1-8b-instruct-q5_k_s.gguf",
-	n_gpu_layers=1,
-    flash_attn=True
+client = openai.OpenAI(
+    base_url="https://5311-122-171-22-71.ngrok-free.app/v1",
+    api_key = "sk-no-key-required"
 )
-
-
-callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
-
-llama_llm = Llama.from_pretrained(
-	repo_id="antash420/Llama-3.1-8B-Instruct-Q5_K_S-GGUF",
-	filename="llama-3.1-8b-instruct-q5_k_s.gguf",
-	n_gpu_layers=1,
-    flash_attn=True
-)
-
-
-callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
 client_groq = Groq(
-  api_key=os.environ.get("GROQ_API_KEY")
+  api_key=os.getenv("GROQ_API_KEY")
 )
 
 llm = ChatGroq(model="llama-3.1-70b-versatile")
@@ -103,11 +91,12 @@ def check_url_type(article_text):
     Wait for the user to provide the summary text.
     """
 
-    response = llama_llm.create_chat_completion(
+    response = client.chat.completions.create(
+        model = "gpt-3.5-turbo",
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": article_text},
         ]
     )
-    logger.info("IsArticle: ", response)
-    return response['choices'][0]['message']['content']
+    logger.info(f"IsArticle: {response}")
+    return response.choices[0].message.content

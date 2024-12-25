@@ -1,4 +1,8 @@
+import logging
 import sqlite3
+import os
+
+logger = logging.getLogger(__name__)
 
 userTable = '''
 CREATE TABLE IF NOT EXISTS users (
@@ -38,10 +42,16 @@ CREATE TABLE IF NOT EXISTS articles (
 
 
 def init_db():
-    conn = sqlite3.connect('scraper.db')
+    db_path = '/data/scraper.db'  # Adjust this if your volume is mounted elsewhere
+    if not os.path.exists(db_path):
+        logger.info(f"Database file does not exist at {db_path}, creating new one.")
+
+    conn = sqlite3.connect('/data/scraper.db', check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL;")
     cur = conn.cursor()
     cur.execute(userTable)
     cur.execute(collectionsTable)
     cur.execute(articleTable)
+    logger.info("Connection Developed: ", conn)
     conn.commit()
     conn.close()

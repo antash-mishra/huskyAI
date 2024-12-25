@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GoogleLogin, GoogleOAuthProvider, CredentialResponse } from '@react-oauth/google';
 
 import { useUser } from '../../context/UserContext';
-import { base_url, token_store } from '@/shared/consts';
+import { base_url, token_store, user_detail_store } from '@/shared/consts';
 
 
 // Define types for user and error
@@ -51,7 +51,7 @@ const GoogleSignIn = () => {
             const data = await response.json()
             console.log("Data: ", data)
             localStorage.setItem(token_store, data.token)
-
+	    localStorage.setItem(user_detail_store, data.user.email)
             // Set user information
             setUser(data.user);
             router.push('/history')
@@ -76,7 +76,8 @@ const GoogleSignIn = () => {
             }
             
             const data = await response.json()
-            
+
+            localStorage.setItem(user_detail_store, data.user);
             setUser(data.user);
         }
         catch (err) {
@@ -91,7 +92,8 @@ const GoogleSignIn = () => {
 
     const handleLogout = () => {
         localStorage.removeItem(token_store)
-        setUser(null)
+        localStorage.removeItem(user_detail_store)
+	setUser(null)
         router.push('/');
     };
 
@@ -104,7 +106,7 @@ const GoogleSignIn = () => {
         )}
   
         {!user ? (
-            <GoogleOAuthProvider clientId={process.env.GOOGLE_CLIENT_ID}>
+            <GoogleOAuthProvider clientId={process.env.GOOGLE_CLIENT_ID || ''}>
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleFailure}
