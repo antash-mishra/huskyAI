@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()  
 
 client = openai.OpenAI(
-    base_url="https://5311-122-171-22-71.ngrok-free.app/v1",
+    base_url="https://4452-2401-4900-1cba-9a83-c4fa-cfc-c509-d2fa.ngrok-free.app/v1",
     api_key = "sk-no-key-required"
 )
 
