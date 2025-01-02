@@ -2,7 +2,7 @@
 
 ### Demo
 
-![2025-01-02 13-10-10](https://github.com/user-attachments/assets/08b67ef2-cab1-4305-9ee0-8a1519f04db3)
+![ezgif-6-05f901af54](https://github.com/user-attachments/assets/a7dea6a3-0255-4481-94a2-76733efe4778)
 
 ### Starting backend server
 
