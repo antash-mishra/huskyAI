@@ -1,8 +1,8 @@
-![2025-01-02 13-10-10](https://github.com/user-attachments/assets/08b67ef2-cab1-4305-9ee0-8a1519f04db3)## Scrape Anything (HuskyAI)
+## Scrape Anything (HuskyAI)
 
 ### Demo
 
-![Uploading 2025-01-02 13-10-10.gif…](Beta Product Demo)
+![2025-01-02 13-10-10](https://github.com/user-attachments/assets/08b67ef2-cab1-4305-9ee0-8a1519f04db3)
 
 ### Starting backend server
 
