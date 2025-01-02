@@ -1,5 +1,9 @@
 ## Scrape Anything (HuskyAI)
 
+### Demo
+
+* [![Product Beta Demo]](https://drive.google.com/file/d/1akgasLLhow5gV7vEjY7D6kUtWQu6EoiQ/view?usp=drive_link)
+
 ### Starting backend server
 
 * Create a venv in the main folder
