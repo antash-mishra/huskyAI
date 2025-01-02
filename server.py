@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-DATABASE_URL = "/data/scraper.db"
+DATABASE_URL = "scraper.db"
 app.config['CELERY_BROKER_URL'] = os.getenv('CELERY_BROKER_URL')
 app.config['CELERY_RESULT_BACKEND'] = os.getenv('CELERY_RESULT_BACKEND')
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
@@ -40,6 +40,18 @@ def save_collection(user_id, url):
     try:
         conn = sqlite3.connect(DATABASE_URL, check_same_thread=False)
         cursor = conn.cursor()
+
+        # Check for duplicate URL for the user
+        cursor.execute('''
+            SELECT collection_id FROM collections WHERE user_id = ? AND url = ?
+        ''', (user_id, url))
+        existing_collection = cursor.fetchone()
+
+        if existing_collection:
+            return {
+                "collection_id": existing_collection[0],
+                "already_exists": True
+            }
         
         cursor.execute('''
             INSERT INTO collections (user_id, collection_name, url, created_at, updated_at)
@@ -52,7 +64,14 @@ def save_collection(user_id, url):
         
         conn.commit()
         print("Collection ID: ", collection_id)
-        return collection_id  # Return the fetched collection ID
+        return {
+            "collection_id": collection_id,
+            "already_exists": False
+        }
+
+    except sqlite3.IntegrityError as e:
+        logger.error(f"Database integrity error: {e}")
+        raise ValueError("Failed to save collection due to database constraint.")
 
     except Exception as e:
         logger.error(f"Collection not saved: {e}")
@@ -88,7 +107,14 @@ def scrape():
         
         try: 
             logger.info(f"SAVE COLLECTION: {user_id} {url}")
-            collection_id = save_collection(user_id=user_id, url=url)
+            save_result = save_collection(user_id=user_id, url=url)
+            if save_result["already_exists"]:
+                return jsonify({
+                    'success': False,
+                    'message': 'URL is already in the collection.',
+                    'collection_id': save_result["collection_id"]
+                }), 409
+            collection_id = save_result["collection_id"]
         except Exception as e:
             return jsonify({'error': str(e)}), 500
         # Enqueue the task

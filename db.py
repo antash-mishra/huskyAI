@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS collections (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
+    UNIQUE (user_id, url) -- Composite unique constraint
 );
 '''
 articleTable = '''
@@ -36,17 +37,17 @@ CREATE TABLE IF NOT EXISTS articles (
             downvotes INTEGER DEFAULT 0,
             title TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (collection_id) REFERENCES collections(collection_id)
+            FOREIGN KEY (collection_id) REFERENCES collections(collection_id) ON DELETE CASCADE
 );
 '''
 
 
 def init_db():
-    db_path = '/data/scraper.db'  # Adjust this if your volume is mounted elsewhere
+    db_path = 'scraper.db'  # Adjust this if your volume is mounted elsewhere
     if not os.path.exists(db_path):
         logger.info(f"Database file does not exist at {db_path}, creating new one.")
 
-    conn = sqlite3.connect('/data/scraper.db', check_same_thread=False)
+    conn = sqlite3.connect('scraper.db', check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
     cur = conn.cursor()
     cur.execute(userTable)

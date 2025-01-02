@@ -10,47 +10,79 @@ import {token_store, base_url} from "@/shared/consts"
 
 import { ScrapeResponse, ApiError } from '@/types/scraping';
 
+type ApiResponse = {
+  success: boolean;
+  message: string;
+  task_id?: string; // Optional for success responses
+  collection_id?: number; // Optional for duplicate URL responses
+  error?: string; // Optional for error responses
+};
 
 export default function ScraperForm() {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('');
+  const [response, setResponse] = useState<ApiResponse | null>(null);
   const router = useRouter();
 
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
     setError('');
-
-    
+    setResponse(null);
+  
     try {
-      const token = localStorage.getItem(token_store)
-
-      // You can replace this with your actual API route
-      const response = await fetch(base_url +'/api/scrape', {
+      const token = localStorage.getItem(token_store);
+  
+      if (!token) {
+        setError('Authorization token is missing.');
+        return;
+      }
+  
+      // Call the API
+      const response = await fetch(base_url + '/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ url: inputValue }),
-      })
-
+      });
+  
+      const responseData: ApiResponse = await response.json();
+  
       if (!response.ok) {
-        const errorData: ApiError = await response.json();
-        throw new Error(errorData.error || 'Scraping failed');
+        if (response.status === 409 && responseData.collection_id) {
+          // Handle duplicate URL case
+          setResponse({
+            success: false,
+            message: responseData.message,
+            collection_id: responseData.collection_id,
+          });
+        } else {
+          // Handle other errors
+          setError(responseData.error || 'Scraping failed.');
+        }
+        return;
       }
-
-      // const data: ScrapeResponse = await response.json();
+  
+      // Handle success
+      setResponse({
+        success: true,
+        message: responseData.message,
+        task_id: responseData.task_id,
+      });
+  
+      // Redirect to history
       router.push('/history');
-
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred.');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+  
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -78,11 +110,25 @@ export default function ScraperForm() {
           </div>
         </form>
 
-        {error && (
-          <Alert className="bg-green-50 text-green-700 border-green-200">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        {response && (
+  <Alert
+    className={`${
+      response.success
+        ? "bg-blue-50 text-blue-700 border-blue-200"
+        : "bg-red-50 text-red-700 border-red-200"
+    }`}
+  >
+    <AlertDescription>
+      {response.message}
+    </AlertDescription>
+  </Alert>
+)}
+
+{error && (
+  <Alert className="bg-red-50 text-red-700 border-red-200">
+    <AlertDescription>{error}</AlertDescription>
+  </Alert>
+)}
       </div>
     </div>
   )
