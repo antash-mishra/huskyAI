@@ -1,4 +1,4 @@
-## Scrape Anything(Only Articles)
+## Scrape Anything (Only Articles)
 
 ### Demo
 
