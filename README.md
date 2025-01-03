@@ -1,4 +1,4 @@
-## Scrape Anything (Only Articles)
+## HuskyAI (Build Personalized News feed)
 
 ### Demo
 
