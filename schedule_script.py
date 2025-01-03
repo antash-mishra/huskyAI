@@ -3,8 +3,9 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 from datetime import datetime
-from scrap import get_webtext, extract_domain_name, call_llm, get_domain_hyperlinks
-
+from scrap import get_webtext, extract_domain_name
+from llm import call_llm
+from parser import get_domain_hyperlinks
 # Setup Looging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def scrape_url(url, depth=1, max_depth=2, processed_urls=None):
         # Initialize the parent response
         parent_response = {"url": url, "page_type": url_type, "url_summary": llm_response, "title": article_title}
         
-        all_responses = [].extend(parent_response)
+        all_responses = [parent_response]
 
         # If the page type is valid, retrieve hyperlinks for nested scraping
         if url_type:
@@ -63,13 +64,13 @@ def scrape_url(url, depth=1, max_depth=2, processed_urls=None):
             logger.info(f"Total Number of hyperlinks found: {len(url_hyperlinks)}")
             unique_links = set(url_hyperlinks) - processed_urls  # Filter only unprocessed links
 
-            for link in unique_links:
+            for link in list(unique_links)[:5]:
                 try:
                     logger.info(f"Processing nested link: {link}")
 
                     # Recursively fetch summaries for nested links
-                    scrape_url(link, depth=depth + 1, max_depth=max_depth, processed_urls=processed_urls)
-
+                    nested_response = scrape_url(link, depth=depth + 1, max_depth=max_depth, processed_urls=processed_urls)
+                    all_responses.extend(nested_response)
                 except Exception as e:
                     logger.error(f"Error processing link {link}: {e}")
                     continue  # Skip to the next link in case of an error        
@@ -138,7 +139,7 @@ def scrape_and_store_all_urls():
 
             # Scrape the URL and nested links
             scrapped_data = scrape_url(url)
-
+            print("Scrapped Data: ", scrapped_data)
             if scrapped_data:
                 # Insert into article table for each user_id
                 cursor.execute('SELECT user_id FROM collections WHERE url = ?', (url,))
@@ -150,7 +151,7 @@ def scrape_and_store_all_urls():
                     collection_id = cursor.fetchone()[0]
 
                     # Insert the scrapped article
-                    insert_article(collection_id, scrapped_data, cursor, conn)
+                    insert_article(collection_id, user_id, scrapped_data, cursor, conn)
         conn.close()
 
     except Exception as e:

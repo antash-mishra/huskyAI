@@ -66,7 +66,7 @@ def get_webtext(url):
     # text = str(soup.body())
 
     # cleaned_body_content = clean_body_content(text)
-    #print("Cleaned body content: ", cleaned_body_content)
+    print("Cleaned body content: ", cleaned_body_content)
         
     #take_screenshot(url, local_domain)    
     return cleaned_body_content,article_title

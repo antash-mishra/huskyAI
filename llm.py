@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()  
 
 client = openai.OpenAI(
-    base_url="https://4452-2401-4900-1cba-9a83-c4fa-cfc-c509-d2fa.ngrok-free.app/v1",
+    base_url="https://5942-2401-4900-1cba-9a83-c4fa-cfc-c509-d2fa.ngrok-free.app/v1",
     api_key = "sk-no-key-required"
 )
 
@@ -57,7 +57,7 @@ def call_llm(article_text):
   for i,chunk in enumerate(documents):
     context = chunk.page_content
     chunk_summary = map_chain.invoke({"context": context})
-    logger.info(f"Chunk Summary {i}: ", chunk_summary)
+    logger.info(f"Chunk Summary {i}: {chunk_summary}")
     chunk_summaries.append(chunk_summary)
 
   logger.info(f"Generated summaries for {len(chunk_summaries)} chunks.")

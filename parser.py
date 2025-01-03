@@ -116,7 +116,7 @@ def get_domain_hyperlinks(local_domain, url: str, wait_time: int = 10) -> Set[st
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-gpu')
-    options.binary_location = '/usr/bin/google-chrome'
+    #options.binary_location = '/usr/bin/google-chrome'
 
     driver = webdriver.Chrome(options=options)
     unique_links = set()
