@@ -12,7 +12,7 @@ from scrap import extract_domain_name
 
 from db import init_db
 import jwt
-import datetime
+from datetime import datetime, timedelta
 
 
 load_dotenv()
@@ -184,6 +184,44 @@ def downvote(id):
     finally:
         conn.close()
 
+@app.route('/history/<int:id>/update', methods=['PUT'])
+def visited(id):
+    try:
+        conn = sqlite3.connect(DATABASE_URL)
+        conn.row_factory = sqlite3.Row  # Enable dictionary-like row access
+        cursor = conn.cursor()
+
+        # Retrieve the current 'visited' value
+        cursor.execute('SELECT visited, visited_at FROM articles WHERE article_id = ?', (id,))
+        row = cursor.fetchone()
+
+        if row is None:
+            return jsonify({"error": "Item not found"}), 404
+
+
+        visited = int(row['visited'])
+        visited_at = row['visited_at']
+
+        if visited == 0:  # Toggle logic
+            visited = 1
+            visited_at = datetime.utcnow() # visited date.
+        else: 
+            visited = 0
+
+        # Update the 'visited' value in the database
+        cursor.execute('UPDATE articles SET visited = ?, visited_at = ? WHERE article_id = ?', (visited, visited_at, id))
+        conn.commit()
+
+        return jsonify({"id": id, "visited": visited, "visited_at": visited_at}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
+
 @app.route("/history", methods=["GET"])
 def get_history():
 
@@ -195,13 +233,14 @@ def get_history():
         cursor = conn.cursor()
         cursor.execute("""
             SELECT 
-                articles.article_id as id,
+                articles.article_id AS id,
                 articles.url,
-                articles.isarticle as page_type,
-                articles.summary as url_summary,
+                articles.isarticle AS page_type,
+                articles.summary AS url_summary,
                 articles.upvotes,
                 articles.downvotes,
-                articles.title
+                articles.title,
+                articles.created_at
             FROM 
                 articles
             JOIN 
@@ -209,7 +248,10 @@ def get_history():
             JOIN 
                 users ON collections.user_id = users.user_id
             WHERE 
-                isarticle = \'IsArticle\' and users.email = ?;
+                articles.isarticle = 'IsArticle' 
+                AND users.email = ?
+            ORDER BY 
+                articles.created_at DESC;
         """, (user_email,))
         
         rows = cursor.fetchall()
@@ -286,7 +328,7 @@ def google_auth():
             'user_id': user_id,
             'email': email,
             'name': name,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)
+            'exp': datetime.utcnow() + timedelta(days=1)
         }, os.getenv("JWT_SECRET"), algorithm='HS256')
 
         return jsonify({'token': jwt_token,

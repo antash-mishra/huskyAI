@@ -35,9 +35,12 @@ CREATE TABLE IF NOT EXISTS articles (
             isarticle TEXT NOT NULL,
             upvotes INTEGER DEFAULT 0,
             downvotes INTEGER DEFAULT 0,
+            visited INTEGER DEFAULT 0,
             title TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            visited_at DATETIME,
             FOREIGN KEY (collection_id) REFERENCES collections(collection_id) ON DELETE CASCADE
+            UNIQUE (collection_id, url)  -- composite unique constraint
 );
 '''
 

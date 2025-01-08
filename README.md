@@ -38,6 +38,8 @@
 * ~~Change database schema~~
 * ~~Way to scrape each collection only once but add in collection for each user.~~
 * ~~Donot crawl articles which are already in the collection for the user~~
+* ~~Each user should not have duplicate article.~~
+* ~~Save user visited article tag in the database.~~
 * Create personalized recommendation system.
 * Show recommendation for collections that can be scrapped.
 * Future Work: Rightnow we add the whole url of the website that needs to be scrapped. Way that user don't need to write the url but just the source name and get recommendation or something. 

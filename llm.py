@@ -25,7 +25,7 @@ client_groq = Groq(
   api_key=os.getenv("GROQ_API_KEY")
 )
 
-llm = ChatGroq(model="llama-3.1-70b-versatile")
+llm = ChatGroq(model="llama-3.1-8b-instant")
 
 
 def call_llm(article_text):

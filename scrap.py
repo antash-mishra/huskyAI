@@ -66,7 +66,7 @@ def get_webtext(url):
     # text = str(soup.body())
 
     # cleaned_body_content = clean_body_content(text)
-    print("Cleaned body content: ", cleaned_body_content)
+    #print("Cleaned body content: ", cleaned_body_content)
         
     #take_screenshot(url, local_domain)    
     return cleaned_body_content,article_title
@@ -116,8 +116,8 @@ def get_summary(url, depth=1, max_depth=2, processed_urls=None, collection_id=No
         
         if cursor and collection_id is not None:
             cursor.execute('''
-                INSERT OR IGNORE INTO articles (collection_id, url, summary, isarticle, upvotes, downvotes, title) 
-                VALUES (?, ?, ?, ?, 0, 0, ?)
+                INSERT OR IGNORE INTO articles (collection_id, url, summary, isarticle, upvotes, downvotes,visited, title) 
+                VALUES (?, ?, ?, ?, 0, 0, 0, ?)
             ''', (collection_id, url, llm_response, url_type, article_title))
 
             conn.commit()

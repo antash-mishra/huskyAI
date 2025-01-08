@@ -94,6 +94,22 @@ export default function HistoryPage() {
     }
   };
 
+  const handleVisited = async (item: ScrapedUrl) => {
+    try {
+      await fetch(base_url + `/history/${item.id}/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Failed to update history:', error);
+    } finally {
+      // Navigate to the link after making the API call
+      window.open(item.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
 
 
   const filteredHistory = history.filter(item => 
@@ -152,6 +168,7 @@ export default function HistoryPage() {
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-blue-500 hover:underline visited:text-purple-600"
+                    onClick={() => handleVisited(item)}
                   >
                     {item.title}
                   </a>

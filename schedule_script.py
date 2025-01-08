@@ -64,7 +64,7 @@ def scrape_url(url, depth=1, max_depth=2, processed_urls=None):
             logger.info(f"Total Number of hyperlinks found: {len(url_hyperlinks)}")
             unique_links = set(url_hyperlinks) - processed_urls  # Filter only unprocessed links
 
-            for link in list(unique_links)[:5]:
+            for link in unique_links:
                 try:
                     logger.info(f"Processing nested link: {link}")
 
