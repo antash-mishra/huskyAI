@@ -157,12 +157,6 @@ export default function HistoryPage() {
                   </a>
                 </CardTitle>
                 <div className="flex items-center space-x-2">
-                  <Badge 
-                    variant="secondary"
-                    className="capitalize"
-                  >
-                    {item.page_type}
-                  </Badge>
                   <div className="flex items-center space-x-1">
                     <button
                       className="text-green-500 hover:text-green-700"
@@ -182,8 +176,9 @@ export default function HistoryPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 text-sm">
-                  {item.url_summary}
+                <p className="text-gray-600 text-sm">{item.url_summary}</p>
+                <p className="text-gray-500 text-xs mt-2">
+                  Posted on: {new Date(item.created_at).toLocaleDateString()} at {new Date(item.created_at).toLocaleTimeString()}
                 </p>
               </CardContent>
             </Card>
