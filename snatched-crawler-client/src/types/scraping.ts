@@ -13,8 +13,16 @@ export interface ScrapingResult {
     downvotes: number;
     title: string;
     created_at: string;
+  }
+
+  export interface Source {
+    id: number;
+    name: string;
+    url: string;
+    updated_at: string;
   }  
   
+  //export type Source = SourceUrl[]; 
   export type ScrapeResponse = ScrapedUrl[];
   
   export interface ApiError {

@@ -16,3 +16,7 @@ scraper.db
 .env
 Untitled.ipynb
 venv
+.vscode/
+scraper copy.db
+scraper.db-shm
+scraper.db-wal

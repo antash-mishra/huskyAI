@@ -70,3 +70,24 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.bg-grid-white\/10 {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate3d(1, 1, 1, 0deg); }
+  50% { transform: translateY(-20px) rotate3d(1, 1, 1, 10deg); }
+  100% { transform: translateY(0px) rotate3d(1, 1, 1, 0deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.bg-dots-darker {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}

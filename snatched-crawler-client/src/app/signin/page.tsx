@@ -107,10 +107,21 @@ const GoogleSignIn = () => {
   
         {!user ? (
             <GoogleOAuthProvider clientId={process.env.GOOGLE_CLIENT_ID || ''}>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleFailure}
-          />
+            
+            <div className='inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0'>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleFailure}
+              useOneTap
+              theme="filled_black"
+              shape="rectangular"
+              size="large"
+              text="continue_with"
+              locale="en"
+              width="300"
+            />
+            </div>
+          
           </GoogleOAuthProvider>
         ) : (
           <div>

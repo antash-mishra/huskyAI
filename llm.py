@@ -11,34 +11,30 @@ from langchain_community.llms import llamacpp
 from langchain_core.callbacks import CallbackManager, StreamingStdOutCallbackHandler
 from llama_cpp import Llama
 import logging
-import openai
 
 logger = logging.getLogger(__name__)
 load_dotenv()  
 
-client = openai.OpenAI(
-    base_url="https://5942-2401-4900-1cba-9a83-c4fa-cfc-c509-d2fa.ngrok-free.app/v1",
-    api_key = "sk-no-key-required"
+client = OpenAI(
+    base_url="",
+    api_key = ""
 )
 
 client_groq = Groq(
   api_key=os.getenv("GROQ_API_KEY")
 )
 
-llm = ChatGroq(model="llama-3.1-8b-instant")
+llm=ChatGroq(model="llama-3.1-8b-instant", groq_api_key=os.getenv("GROQ_API_KEY"))
 
 
 def call_llm(article_text):
-
+  
   # Use a text splitter optimized for longer documents
-  text_splitter = text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
+  text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
     separator= " ",
     chunk_size=3500,  # Slightly larger chunk size
     chunk_overlap=0,  # Significant overlap to maintain context
-)
-
-  # doc = Document(page_content=article_text)
-  # print("doc: ", doc)
+  )
 
   split_docs = text_splitter.split_text(article_text)
 
@@ -47,10 +43,10 @@ def call_llm(article_text):
   logger.info(f"Generated {len(documents)} documents.")
 
   map_prompt = ChatPromptTemplate.from_messages(
-    [("human", 
-      "Write a concise summary of the following chunked part of article scraped from website. **Just write the 1-2 sentence summary nothing else.**:\n{context}")]
+    [("human",
+      "Write a concise summary of the following chunked part of article scraped from website. **Just write the 3-4 sentence summary nothing else.**:\n{context}")]
   )
-  
+
   map_chain = map_prompt | llm | StrOutputParser()
 
   chunk_summaries = []
@@ -85,14 +81,24 @@ def call_llm(article_text):
 
 def check_url_type(article_text):
     system_prompt = """
-    Classify the given summary as either 'IsArticle' or 'NotArticle'. Base your classification on the presence of a clear topic, relevant details, organized structure, formal tone, and neutral perspective. Respond with one of the following, and only this exact classification:
-    - IsArticle
-    - NotArticle
-    Wait for the user to provide the summary text.
+You are an expert in evaluating written content. The provided text is a summarized version of content scraped from a website. Classify it as either 'IsArticle' or 'NotArticle' based on the following
+
+1. **Clear Topic**: Focuses on a specific subject (e.g., news, blog, or informational content).  
+2. **Relevant Details**: Includes key and informative content about the topic.  
+3. **Organized Structure**: Logically arranged and easy to follow.  
+4. **Formal or Consistent Tone**: Maintains professionalism or a consistent tone (even if conversational, as in blogs).  
+5. **Neutral or Relevant Perspective**: Avoids unwarranted bias unless the style fits the blog format.
+
+### Output Options:
+- **IsArticle**: Meets all criteria, whether it's a blog, news article, or informational content.  
+- **NotArticle**: Fails one or more criteria.  
+
+**Reply only either 'IsArticle' or 'NotArticle'.Nothing else.**
+Provide the text for classification.
     """
 
     response = client.chat.completions.create(
-        model = "gpt-3.5-turbo",
+        model = "tgi",
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": article_text},

@@ -64,7 +64,7 @@ def scrape_url(url, depth=1, max_depth=2, processed_urls=None):
             logger.info(f"Total Number of hyperlinks found: {len(url_hyperlinks)}")
             unique_links = set(url_hyperlinks) - processed_urls  # Filter only unprocessed links
 
-            for link in unique_links:
+            for link in list(unique_links)[:2]:
                 try:
                     logger.info(f"Processing nested link: {link}")
 
@@ -92,7 +92,7 @@ def insert_article(collection_id, user_id, scraped_data, cursor, conn):
     inserted_article_ids = []
 
     try:
-        for article in scraped_data:
+        for article in scraped_data[:1]:
             url = article['url']
             title = article.get('title', '')
             url_summary = article.get('url_summary', '')
@@ -111,6 +111,9 @@ def insert_article(collection_id, user_id, scraped_data, cursor, conn):
 
             if article_id:
                 inserted_article_ids.append(article_id)
+
+        # Update the updated_at timestamp for the collection
+        cursor.execute('''UPDATE collections SET updated_at = ? WHERE collection_id = ?''', (datetime.now(), collection_id))
 
         conn.commit()
         logger.info(f"Inserted {len(inserted_article_ids)} articles for user {user_id}, collection {collection_id}")
@@ -148,8 +151,9 @@ def scrape_and_store_all_urls():
                 for user_id_tuple in user_ids:
                     user_id = user_id_tuple[0]
                     cursor.execute('SELECT collection_id FROM collections WHERE user_id = ? AND url = ?', (user_id, url))
+                    
                     collection_id = cursor.fetchone()[0]
-
+                    
                     # Insert the scrapped article
                     insert_article(collection_id, user_id, scrapped_data, cursor, conn)
         conn.close()

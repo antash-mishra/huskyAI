@@ -1,4 +1,5 @@
 import os
+from typing import final
 from flask import Flask, g, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -6,6 +7,7 @@ import sqlite3
 import logging 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from h11 import Request
 
 from celery_app import scrape_and_store
 from scrap import extract_domain_name
@@ -221,6 +223,81 @@ def visited(id):
         if 'conn' in locals() and conn:
             conn.close()
 
+@app.route('/sources', methods=['GET'])
+def sources():
+
+    try:
+        user_email = request.headers.get('User-Email')
+
+        conn = sqlite3.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        # Get user-id
+        cursor.execute("SELECT user_id FROM users WHERE email = ?", (user_email,));
+        user_id = cursor.fetchone()[0]
+        print("user_id: ", user_id);
+        # Get all collections
+        cursor.execute("""
+            SELECT 
+                collections.collection_id AS id,
+                       collections.collection_name AS name,
+                       collections.url AS url,
+                       collections.updated_at AS updated_at
+
+            FROM 
+                collections
+            WHERE
+                collections.user_id = ?
+            ORDER BY
+                collections.updated_at DESC;
+        """, (user_id,))
+
+        rows = cursor.fetchall()
+
+        sources = []
+
+        for row in rows:
+            entry = {
+                "id": row[0],
+                "name": row[1],
+                "url": row[2],
+                "updated_at": row[3],
+            }
+            sources.append(entry)
+        print("Sources: ", sources)
+        conn.close()
+        
+        return jsonify(sources)
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
+@app.route('/sources/<string:id>', methods=['DELETE'])
+def delete_source(id):
+    try:
+        print("ID: ", id)
+        conn = sqlite3.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        cursor.execute('DELETE FROM articles WHERE collection_id= ?;', (int(id),))
+        cursor.execute('DELETE FROM collections WHERE collection_id= ?;', (int(id),))
+
+        print("DOne")
+
+        conn.commit()
+
+        return jsonify({'message': 'Source deleted successfully'}), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
 
 @app.route("/history", methods=["GET"])
 def get_history():
@@ -255,8 +332,7 @@ def get_history():
         """, (user_email,))
         
         rows = cursor.fetchall()
-        logger.info(f"History Connection: {conn}")
-        logger.info(f"History Entry2: {rows}")
+
         # Structure the data as a list of dictionaries
         history = []
         for row in rows:
@@ -268,17 +344,18 @@ def get_history():
                 "upvotes": row[4],
                 "downvotes": row[5],
                 "title": row[6],
+                "created_at": row[7],
             }
             history.append(entry)
             
-            print(f"History Entry: {entry}")
         # Close the database connection
         conn.close()
 
         return jsonify(history)
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500    
+
 
 
 def save_user(user_id, user_name, email):

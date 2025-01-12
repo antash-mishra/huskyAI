@@ -74,6 +74,7 @@ const Navbar: React.FC = () => {
             {!isSignInPage && (
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <NavLink href="/history">History</NavLink>
+                <NavLink href='/sources'>Sources</NavLink>
                 <NavLink href="/scrape">New Scrape</NavLink>
               </div>
             )}
